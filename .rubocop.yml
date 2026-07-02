@@ -1,0 +1,53 @@
+AllCops:
+  TargetRubyVersion: 3.0
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - 'vendor/**/*'
+    - 'bin/**/*'
+
+# Documentation is provided at the module/section level, not per class.
+Style/Documentation:
+  Enabled: false
+
+# The SDK deliberately raises errors with explicit message keyword for clarity.
+Style/RaiseArgs:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+
+# Wire-shape builders and the operations table are naturally long.
+Metrics/MethodLength:
+  Max: 40
+Metrics/ClassLength:
+  Max: 250
+Metrics/AbcSize:
+  Max: 30
+Metrics/CyclomaticComplexity:
+  Max: 12
+Metrics/PerceivedComplexity:
+  Max: 12
+Metrics/ParameterLists:
+  Max: 14
+  CountKeywordArgs: false
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+    - '**/*.gemspec'
+
+Layout/LineLength:
+  Max: 110
+
+# Keyword-heavy public methods read better without forcing hash options.
+Naming/MethodParameterName:
+  MinNameLength: 2
+
+Metrics/ModuleLength:
+  Max: 250
+
+# expect { ... }.to raise_error(...) do |error| ... end is the standard rspec
+# idiom for asserting on error attributes.
+Style/MultilineBlockChain:
+  Exclude:
+    - 'spec/**/*'

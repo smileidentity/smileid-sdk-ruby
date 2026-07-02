@@ -21,7 +21,6 @@ Gem::Specification.new do |spec|
   spec.files = Dir['lib/**/*', 'LICENSE', 'README.md', 'CHANGELOG.md']
   spec.require_paths = ['lib']
 
-  spec.add_development_dependency 'bundler-audit', '~> 0.9'
-  spec.add_development_dependency 'rspec', '~> 3.0'
-  spec.add_development_dependency 'rubocop', '~> 1.60'
+  spec.add_dependency 'faraday', '~> 2.0'
+  spec.add_dependency 'faraday-multipart', '~> 1.0'
 end
