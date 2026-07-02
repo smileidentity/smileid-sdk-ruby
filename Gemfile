@@ -6,7 +6,8 @@ source 'https://rubygems.org'
 gemspec
 
 group :development, :test do
-  gem 'bundler-audit', require: false
-  gem 'rspec'
-  gem 'rubocop'
+  gem 'bundler-audit', '~> 0.9', require: false
+  gem 'rspec', '~> 3.0'
+  gem 'rubocop', '~> 1.60'
+  gem 'webmock', '~> 3.0', require: false
 end
