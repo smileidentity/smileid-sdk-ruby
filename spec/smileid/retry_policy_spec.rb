@@ -69,6 +69,72 @@ RSpec.describe 'retry policy' do
     expect(slept).to eq([7.0])
   end
 
+  it 'honours the Retry-After HTTP-date form' do
+    stub_token
+    slept = []
+    transport = client.instance_variable_get(:@transport)
+    allow(transport).to receive(:sleep_for) { |seconds| slept << seconds }
+
+    stub_status_sequence(
+      error_response(503).merge(headers: { 'Content-Type' => 'application/json',
+                                           'Retry-After' => (Time.now + 10).httpdate }),
+      complete_response
+    )
+
+    client.verifications.retrieve('job_01h8x9y2z3a4b5c6d7e8f9g0h1')
+    expect(slept.length).to eq(1)
+    expect(slept.first).to be_between(8, 10)
+  end
+
+  it 'floors a past Retry-After HTTP-date at zero' do
+    stub_token
+    slept = []
+    transport = client.instance_variable_get(:@transport)
+    allow(transport).to receive(:sleep_for) { |seconds| slept << seconds }
+
+    stub_status_sequence(
+      error_response(503).merge(headers: { 'Content-Type' => 'application/json',
+                                           'Retry-After' => (Time.now - 60).httpdate }),
+      complete_response
+    )
+
+    client.verifications.retrieve('job_01h8x9y2z3a4b5c6d7e8f9g0h1')
+    expect(slept).to eq([0])
+  end
+
+  it 'caps an honoured Retry-After at 60 seconds' do
+    stub_token
+    slept = []
+    transport = client.instance_variable_get(:@transport)
+    allow(transport).to receive(:sleep_for) { |seconds| slept << seconds }
+
+    stub_status_sequence(
+      error_response(429).merge(headers: { 'Content-Type' => 'application/json',
+                                           'Retry-After' => '3600' }),
+      complete_response
+    )
+
+    client.verifications.retrieve('job_01h8x9y2z3a4b5c6d7e8f9g0h1')
+    expect(slept).to eq([60])
+  end
+
+  it 'falls back to exponential backoff on an unparseable Retry-After' do
+    stub_token
+    slept = []
+    transport = client.instance_variable_get(:@transport)
+    allow(transport).to receive(:sleep_for) { |seconds| slept << seconds }
+
+    stub_status_sequence(
+      error_response(503).merge(headers: { 'Content-Type' => 'application/json',
+                                           'Retry-After' => 'soonish' }),
+      complete_response
+    )
+
+    client.verifications.retrieve('job_01h8x9y2z3a4b5c6d7e8f9g0h1')
+    expect(slept.length).to eq(1)
+    expect(slept.first).to be_between(0.5, 1.0)
+  end
+
   it 'retries connection errors on idempotent operations' do
     stub_token
     stub = stub_request(:get, "#{TestHelpers::SANDBOX}/v3/status/job_01h8x9y2z3a4b5c6d7e8f9g0h1")

@@ -2,6 +2,7 @@
 
 require 'faraday'
 require 'json'
+require 'time'
 
 module SmileID
   # Normalized HTTP response returned by the transport.
@@ -39,6 +40,9 @@ module SmileID
   class Transport
     RETRY_STATUSES = [408, 429, 500, 502, 503, 504].freeze
     BACKOFF_BASE = 0.5
+    # Ceiling for an honoured Retry-After, so a hostile or misconfigured
+    # header cannot block the caller indefinitely.
+    RETRY_AFTER_CAP = 60
 
     def initialize(config)
       @config = config
@@ -81,11 +85,26 @@ module SmileID
       end
     end
 
-    # Exponential backoff with jitter; honour Retry-After when present.
+    # Exponential backoff with jitter; honour Retry-After (capped) when present.
     def backoff(attempt, retry_after)
-      return retry_after.to_f if retry_after && !retry_after.to_s.empty?
+      honoured = parse_retry_after(retry_after)
+      return [honoured, RETRY_AFTER_CAP].min if honoured
 
       (BACKOFF_BASE * (2**attempt)) + (rand * BACKOFF_BASE)
+    end
+
+    # Retry-After is either delta-seconds or an RFC 7231 HTTP-date. Returns
+    # the delay in seconds (floored at 0), or nil when absent or unparseable.
+    def parse_retry_after(value)
+      str = value.to_s.strip
+      return nil if str.empty?
+      return str.to_f if str.match?(/\A\d+(\.\d+)?\z/)
+
+      begin
+        [Time.httpdate(str) - Time.now, 0].max
+      rescue ArgumentError
+        nil
+      end
     end
 
     def sleep_for(seconds)
