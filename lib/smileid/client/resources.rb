@@ -70,6 +70,10 @@ module SmileID
       def verify_enhanced(id_type:, selfie_image:, liveness_images:, document:, consent:, country:,
                           user_details:, document_back: nil, callback_url: nil,
                           partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
+        if id_type.to_s.empty?
+          raise Errors::ValidationError.new('id_type is required for enhanced document verification')
+        end
+
         form = document_form(
           selfie_image: selfie_image, liveness_images: liveness_images, document: document,
           document_back: document_back, consent: consent, country: country, id_type: id_type,
@@ -124,8 +128,6 @@ module SmileID
 
     # POST /v3/registration, /v3/authentication, /v3/compare
     class Biometric < Base
-      COMPARISON_IMAGE_TYPES = %w[DOCUMENT ID_PHOTO PORTRAIT].freeze
-
       def enroll(selfie_image:, liveness_images:, consent:, user_details:,
                  allow_new_enroll: nil, callback_url: nil, sandbox_result: nil,
                  partner_params: nil, metadata: nil, user_id: nil, timeout: nil)

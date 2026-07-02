@@ -134,6 +134,21 @@ RSpec.describe 'client-side validation' do
     end
   end
 
+  describe 'enhanced document verification id_type rule (spec 6.3)' do
+    it 'raises before sending when id_type is nil or empty' do
+      [nil, ''].each do |id_type|
+        expect do
+          client.documents.verify_enhanced(
+            id_type: id_type, selfie_image: 's', liveness_images: %w[a b c d e f],
+            document: 'd', country: 'NG',
+            user_details: valid_user_details, consent: valid_consent
+          )
+        end.to raise_error(SmileID::Errors::ValidationError, /id_type is required/)
+      end
+      expect(WebMock).not_to have_requested(:any, //)
+    end
+  end
+
   describe 'authentication image rule (spec 6.6)' do
     it 'requires images unless use_enrolled_image is true' do
       expect do
