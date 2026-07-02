@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'tempfile'
 
 # Matrix item 1: golden-fixture multipart serialization (spec section 5.3, 6).
 RSpec.describe SmileID::Helpers::Multipart do
@@ -66,6 +67,45 @@ RSpec.describe SmileID::Helpers::Multipart do
     body = build('document' => { bytes: 'png-bytes', filename: 'front.png', content_type: 'image/png' })
     expect(body).to include('filename="front.png"')
     expect(body).to include('Content-Type: image/png')
+  end
+
+  it 'accepts raw binary bytes containing null bytes without probing the filesystem' do
+    jpeg_bytes = "\xFF\xD8\xFF\xE0\x00\x10JFIF\x00\x01".b + Random.bytes(64)
+    body = described_class.build({ 'selfie_image' => jpeg_bytes }, boundary: boundary)[1]
+    expect(body.b).to include(jpeg_bytes)
+    expect(body.b).to include('filename="selfie.jpg"'.b)
+    expect(body.b).to include('Content-Type: image/jpeg'.b)
+  end
+
+  it 'detects PNG for document fields by magic bytes' do
+    png_bytes = "\x89PNG\r\n\x1a\n".b + Random.bytes(32)
+    body = described_class.build({ 'document' => png_bytes,
+                                   'document_back' => png_bytes }, boundary: boundary)[1]
+    expect(body.b.scan('Content-Type: image/png'.b).length).to eq(2)
+    expect(body.b).to include('filename="document.png"'.b)
+    expect(body.b).to include('filename="document_back.png"'.b)
+  end
+
+  it 'detects PNG for document fields by file extension' do
+    Tempfile.create(['front', '.png']) do |file|
+      file.binmode
+      file.write("\x89PNG\r\n\x1a\nfake".b)
+      file.flush
+      body = build('document' => file.path)
+      expect(body).to include('Content-Type: image/png')
+      expect(body).to include("filename=\"#{File.basename(file.path)}\"")
+    end
+  end
+
+  it 'never applies PNG detection to selfie, liveness or comparison images' do
+    png_bytes = "\x89PNG\r\n\x1a\n".b + Random.bytes(32)
+    body = described_class.build(
+      { 'selfie_image' => png_bytes, 'comparison_image' => png_bytes,
+        'liveness_images' => [png_bytes, png_bytes] },
+      boundary: boundary
+    )[1]
+    expect(body.b.scan('Content-Type: image/jpeg'.b).length).to eq(4)
+    expect(body.b).not_to include('Content-Type: image/png'.b)
   end
 
   it 'omits nil fields entirely' do

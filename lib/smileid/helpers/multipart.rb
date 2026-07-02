@@ -33,6 +33,11 @@ module SmileID
         'liveness_images' => 'image/jpeg'
       }.freeze
 
+      # Only document and document_back may be PNG (spec section 5.3 rule 3);
+      # selfie, liveness and comparison images are always image/jpeg.
+      PNG_CAPABLE_FIELDS = %w[document document_back].freeze
+      PNG_MAGIC = "\x89PNG".b.freeze
+
       DEFAULT_FILENAMES = {
         'selfie_image' => 'selfie.jpg',
         'document' => 'document.jpg',
@@ -104,26 +109,49 @@ module SmileID
       end
 
       # Coerce a binary input (path, bytes, IO, Hash, or Faraday FilePart) into
-      # { bytes:, filename:, content_type: }.
+      # { bytes:, filename:, content_type: }. An explicitly provided content
+      # type wins; otherwise the field's default applies, with PNG detection
+      # for the document fields only.
       def coerce_binary(field, input, index: nil)
-        default_ct = DEFAULT_CONTENT_TYPES[field] || 'application/octet-stream'
         default_fn = filename_for(field, index)
 
-        case input
-        when Faraday::Multipart::FilePart
-          from_file_part(input, default_ct, default_fn)
-        when Hash
-          from_hash(input, default_ct, default_fn)
-        when String
-          from_string(input, default_ct, default_fn)
-        else
-          unless input.respond_to?(:read)
-            raise Errors::ValidationError.new("#{field} must be a file path, bytes, IO, or FilePart")
+        upload =
+          case input
+          when Faraday::Multipart::FilePart
+            from_file_part(input, default_fn)
+          when Hash
+            from_hash(input, default_fn)
+          when String
+            from_string(input, default_fn)
+          else
+            unless input.respond_to?(:read)
+              raise Errors::ValidationError.new("#{field} must be a file path, bytes, IO, or FilePart")
+            end
+
+            from_io(input, default_fn)
           end
 
-          from_io(input, default_ct, default_fn)
+        resolve_content_type(field, upload)
+      end
 
+      def resolve_content_type(field, upload)
+        return upload if upload[:content_type]
+
+        default = DEFAULT_CONTENT_TYPES[field] || 'application/octet-stream'
+        if PNG_CAPABLE_FIELDS.include?(field) && png?(upload)
+          upload[:content_type] = 'image/png'
+          if upload[:filename] == DEFAULT_FILENAMES[field]
+            upload[:filename] = upload[:filename].sub(/\.jpg\z/, '.png')
+          end
+        else
+          upload[:content_type] = default
         end
+        upload
+      end
+
+      def png?(upload)
+        upload[:filename].to_s.downcase.end_with?('.png') ||
+          upload[:bytes].to_s.b.start_with?(PNG_MAGIC)
       end
 
       def filename_for(field, index)
@@ -132,18 +160,18 @@ module SmileID
         "#{field}_#{(index || 0) + 1}.jpg"
       end
 
-      def from_file_part(part, default_ct, default_fn)
+      def from_file_part(part, default_fn)
         io = part.instance_variable_get(:@io)
         local_path = part.instance_variable_get(:@local_path)
         bytes = io ? read_all(io) : File.binread(local_path)
         {
           bytes: bytes,
           filename: part.original_filename || default_fn,
-          content_type: part.content_type || default_ct
+          content_type: part.content_type
         }
       end
 
-      def from_hash(hash, default_ct, default_fn)
+      def from_hash(hash, default_fn)
         h = hash.each_with_object({}) { |(k, v), acc| acc[k.to_sym] = v }
         bytes =
           if h[:bytes]
@@ -158,21 +186,28 @@ module SmileID
         {
           bytes: bytes,
           filename: h[:filename] || (h[:path] ? File.basename(h[:path]) : default_fn),
-          content_type: h[:content_type] || default_ct
+          content_type: h[:content_type]
         }
       end
 
-      def from_string(str, default_ct, default_fn)
-        if File.exist?(str)
-          { bytes: File.binread(str), filename: File.basename(str), content_type: default_ct }
+      def from_string(str, default_fn)
+        if plausible_path?(str) && File.exist?(str)
+          { bytes: File.binread(str), filename: File.basename(str), content_type: nil }
         else
-          { bytes: str, filename: default_fn, content_type: default_ct }
+          { bytes: str, filename: default_fn, content_type: nil }
         end
       end
 
-      def from_io(io, default_ct, default_fn)
+      # Raw image bytes routinely contain null bytes or invalid UTF-8, which
+      # File.exist? rejects with ArgumentError. Only probe the filesystem for
+      # strings that could plausibly be paths.
+      def plausible_path?(str)
+        str.length < 4096 && str.valid_encoding? && !str.include?("\0")
+      end
+
+      def from_io(io, default_fn)
         filename = io.respond_to?(:path) && io.path ? File.basename(io.path) : default_fn
-        { bytes: read_all(io), filename: filename, content_type: default_ct }
+        { bytes: read_all(io), filename: filename, content_type: nil }
       end
 
       def read_all(io)
