@@ -27,7 +27,10 @@ RSpec.describe 'sandbox Enhanced KYC end to end', :e2e do
       country: 'NG',
       id_type: 'NIN',
       id_number: '12345678901',
-      user_details: { given_names: 'John', last_name: 'Doe', email: 'john@example.com' },
+      # The sandbox only accepts recognized test identities, matched on
+      # given_names + last_name + email.
+      user_details: { given_names: 'Amina Fatou', last_name: 'Clearwater',
+                      email: 'amina.clearwater@example.com' },
       consent: SmileID::Consent.granted(
         granted_at: Time.now.utc,
         notice_language: 'EN',
