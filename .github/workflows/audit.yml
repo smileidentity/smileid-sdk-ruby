@@ -1,0 +1,42 @@
+name: Security Audit
+
+on:
+  pull_request:
+    paths:
+      - 'Gemfile'
+      - 'Gemfile.lock'
+      - '*.gemspec'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * *'
+
+jobs:
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: ruby/setup-ruby@89f90524b88a01fe6e0b732220432cc6142926af # v1.313.0
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+      - name: Update advisory database
+        run: bundle exec bundler-audit update
+      - name: Run bundler-audit
+        run: bundle exec bundler-audit check
+      - name: Create issue on failure
+        if: failure() && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh issue list --label "security-audit" --state open --json number --jq 'length')
+          if [ "$EXISTING" -gt 0 ]; then exit 0; fi
+          TITLE_DATE=$(date +%Y-%m-%d)
+          gh issue create \
+            --title "Security: Ruby dependency vulnerabilities detected (${TITLE_DATE})" \
+            --label "security-audit" \
+            --label "priority:high" \
+            --body "The daily security audit has detected vulnerabilities. See [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details."
