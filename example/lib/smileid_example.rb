@@ -61,6 +61,9 @@ module SmileIDExample
       opts.on('--timeout VALUE', Float) { |value| config[:timeout] = value }
     end
     rest = parser.order(argv.dup)
+  rescue OptionParser::ParseError => e
+    raise UsageError, e.message
+  else
     [config, rest.shift, rest]
   end
 

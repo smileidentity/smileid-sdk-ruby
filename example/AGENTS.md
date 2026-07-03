@@ -14,4 +14,4 @@ This repository is a standalone example application for the Smile ID Ruby SDK.
 - `lib/smileid_example.rb` contains command parsing and SDK calls.
 - `exe/smileid-example-ruby` is the CLI entrypoint.
 - `spec/smileid_example_spec.rb` is the SDK testbench.
-- `.github/workflows/ci.yml` runs RSpec, RuboCop, and Semgrep.
+- The parent SDK repository runs CI for this embedded example.
