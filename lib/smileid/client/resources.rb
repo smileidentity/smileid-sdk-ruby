@@ -22,7 +22,10 @@ module SmileID
       end
 
       # Use an explicit callback_url, else fall back to the configured default.
+      # Per-request callback URLs must be https (fleet standard); validated
+      # before any request is made. The default was validated at construction.
       def resolve_callback(callback_url)
+        Config.validate_callback_url!(callback_url) if callback_url
         callback_url || @client.config.default_callback_url
       end
 
@@ -222,6 +225,7 @@ module SmileID
       end
 
       def replay(job_id, callback_url: nil, timeout: nil)
+        Config.validate_callback_url!(callback_url) if callback_url
         json = callback_url ? { 'callback_url' => callback_url } : nil
         response = @client.call(:replay, path_params: { 'job_id' => job_id },
                                          json: json, timeout: timeout)

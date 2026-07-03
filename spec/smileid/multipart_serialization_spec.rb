@@ -126,4 +126,49 @@ RSpec.describe SmileID::Helpers::Multipart do
     expect(body).to include('Content-Type: image/png')
     expect(body).to include('doc-bytes')
   end
+
+  describe 'header-injection hardening (fleet standard)' do
+    it 'sanitizes CR/LF and double quotes out of hostile filenames' do
+      hostile = "evil\".jpg\r\nContent-Type: text/html\r\nX-Injected: yes"
+      body = build('document' => { bytes: 'doc', filename: hostile })
+      expect(body).not_to include("\r\nX-Injected")
+      expect(body).not_to include("\r\nContent-Type: text/html")
+      expect(body).to include('filename="evil%22.jpgContent-Type: text/htmlX-Injected: yes"')
+    end
+
+    it 'rejects a hostile explicit content_type even when supplied directly' do
+      expect do
+        build('document' => { bytes: 'doc', filename: 'doc.jpg',
+                              content_type: "image/jpeg\r\nX-Injected: yes" })
+      end.to raise_error(SmileID::Errors::ValidationError, /content_type/)
+    end
+
+    it 'rejects a non-media-type explicit content_type' do
+      expect do
+        build('document' => { bytes: 'doc', filename: 'doc.jpg', content_type: 'not a mime' })
+      end.to raise_error(SmileID::Errors::ValidationError, /content_type/)
+    end
+
+    it 'rejects a hostile content_type on the FilePart path too' do
+      part = Faraday::Multipart::FilePart.new(
+        StringIO.new('doc-bytes'), "image/png\r\nX-Injected: yes", 'scan.png'
+      )
+      expect { build('document' => part) }
+        .to raise_error(SmileID::Errors::ValidationError, /content_type/)
+    end
+
+    it 'sanitizes hostile filenames on the FilePart path too' do
+      part = Faraday::Multipart::FilePart.new(
+        StringIO.new('doc-bytes'), 'image/png', "a\r\nX-Injected: yes.png"
+      )
+      body = build('document' => part)
+      expect(body).not_to include("\r\nX-Injected")
+      expect(body).to include('filename="aX-Injected: yes.png"')
+    end
+
+    it 'still accepts normal explicit content types' do
+      body = build('document' => { bytes: 'doc', filename: 'doc.jpg', content_type: 'image/png' })
+      expect(body).to include('Content-Type: image/png')
+    end
+  end
 end

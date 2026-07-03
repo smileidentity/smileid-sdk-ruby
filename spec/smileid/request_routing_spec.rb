@@ -288,6 +288,32 @@ RSpec.describe 'request routing' do
     end
   end
 
+  describe 'path parameter encoding (fleet standard)' do
+    it 'keeps golden ids byte-identical on the wire' do
+      stub = stub_request(:get, "#{TestHelpers::SANDBOX}/v3/status/job_01h8x9y2z3a4b5c6d7e8f9g0h1")
+             .to_return(status: 200,
+                        body: JSON.generate(status: 'complete',
+                                            job_id: 'job_01h8x9y2z3a4b5c6d7e8f9g0h1'),
+                        headers: { 'Content-Type' => 'application/json' })
+
+      client.verifications.retrieve('job_01h8x9y2z3a4b5c6d7e8f9g0h1')
+      expect(stub).to have_been_requested
+    end
+
+    it 'encodes a hostile user_id as a single path segment' do
+      encoded = 'user%2F..%2Fadmin%20x'
+      stub = stub_request(:post, "#{TestHelpers::SANDBOX}/v3/users/#{encoded}/report_fraud")
+             .to_return(status: 202,
+                        body: JSON.generate(status: 'accepted', message: 'ok',
+                                            user_id: 'user/../admin x'),
+                        headers: { 'Content-Type' => 'application/json' })
+
+      client.users.report_fraud('user/../admin x', is_fraud: false, notes: 'cleared',
+                                                   reported_by: 'risk@example.com')
+      expect(stub).to have_been_requested
+    end
+  end
+
   describe 'default_callback_url (spec 2.1)' do
     it 'is used when a call omits callback_url' do
       cb_client = build_client(default_callback_url: 'https://example.com/default-cb')

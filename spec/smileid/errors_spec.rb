@@ -120,6 +120,47 @@ RSpec.describe SmileID::Errors do
     end
   end
 
+  describe 'UnexpectedResponseError on malformed 2xx bodies (fleet standard)' do
+    it 'raises when a 2xx success body is not a JSON object' do
+      stub_token
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/enhanced_kyc")
+        .to_return(status: 202, body: '<html>proxy interference</html>',
+                   headers: { 'Content-Type' => 'text/html' })
+
+      expect do
+        client.enhanced_kyc.verify(country: 'NG', id_type: 'NIN', id_number: '1',
+                                   user_details: valid_user_details, consent: valid_consent)
+      end.to raise_error(SmileID::Errors::UnexpectedResponseError) do |error|
+        expect(error.status_code).to eq(202)
+        expect(error.raw_body).to eq('<html>proxy interference</html>')
+      end
+    end
+
+    it 'raises when a 2xx body is a JSON array rather than an object' do
+      stub_request(:get, "#{TestHelpers::SANDBOX}/v3/services/bank_codes")
+        .to_return(status: 200, body: '[1,2,3]', headers: { 'Content-Type' => 'application/json' })
+
+      expect { client.services.bank_codes }
+        .to raise_error(SmileID::Errors::UnexpectedResponseError)
+    end
+
+    it 'populates request_id from a response header when present' do
+      stub_request(:get, "#{TestHelpers::SANDBOX}/v3/services/bank_codes")
+        .to_return(status: 200, body: 'not-json',
+                   headers: { 'Content-Type' => 'text/plain', 'X-Request-Id' => 'req-123' })
+
+      expect { client.services.bank_codes }
+        .to raise_error(SmileID::Errors::UnexpectedResponseError) do |error|
+        expect(error.request_id).to eq('req-123')
+      end
+    end
+
+    it 'is a SmileIDError subclass' do
+      expect(SmileID::Errors::UnexpectedResponseError.ancestors)
+        .to include(SmileID::Errors::SmileIDError)
+    end
+  end
+
   describe 'jobs.retrieve 404 handling (spec 6.8)' do
     it 'returns a not_found JobStatus instead of raising NotFoundError' do
       stub_token
