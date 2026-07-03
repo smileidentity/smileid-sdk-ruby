@@ -36,25 +36,33 @@ RSpec.describe SmileIDExample do
       end
       stub.get('/v3/services/supported_id_types') do |env|
         expect(env.params['country']).to eq('NG')
-        json_response(200, id_types: [{
-          country: 'NG',
-          label: 'National Identification Number',
-          regex: '^\\d{11}$',
-          required_fields: ['id_number'],
-          type: 'NIN'
-        }])
+        id_types = [
+          {
+            country: 'NG',
+            label: 'National Identification Number',
+            regex: '^\\d{11}$',
+            required_fields: ['id_number'],
+            type: 'NIN'
+          }
+        ]
+        json_response(200, id_types: id_types)
       end
       stub.get('/v3/services/supported_documents') do |env|
         expect(env.params['country_code']).to eq('NG')
-        json_response(200, valid_documents: [{
-          country: { code: 'NG', name: 'Nigeria', continent: 'Africa' },
-          id_types: [{
-            code: 'PASSPORT',
-            name: 'Passport',
-            example: ['A12345678'],
-            has_back: false
-          }]
-        }])
+        valid_documents = [
+          {
+            country: { code: 'NG', name: 'Nigeria', continent: 'Africa' },
+            id_types: [
+              {
+                code: 'PASSPORT',
+                name: 'Passport',
+                example: ['A12345678'],
+                has_back: false
+              }
+            ]
+          }
+        ]
+        json_response(200, valid_documents: valid_documents)
       end
     end
     out = StringIO.new
