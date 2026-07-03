@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    smileid (12.0.0)
+    usesmileid (12.0.0)
       faraday (~> 2.0)
       faraday-multipart (~> 1.0)
 
@@ -93,7 +93,7 @@ DEPENDENCIES
   public_suffix (< 7)
   rspec (~> 3.0)
   rubocop (~> 1.60)
-  smileid!
+  usesmileid!
   webmock (~> 3.0)
 
 BUNDLED WITH

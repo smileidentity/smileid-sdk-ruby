@@ -1,6 +1,6 @@
-# smileid
+# usesmileid
 
-[![Gem Version](https://img.shields.io/gem/v/smileid.svg)](https://rubygems.org/gems/smileid)
+[![Gem Version](https://img.shields.io/gem/v/usesmileid.svg)](https://rubygems.org/gems/usesmileid)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Official Smile ID server-side SDK for Ruby, covering the V3 APIs.
@@ -14,13 +14,13 @@ Requires Ruby 3.0 or later.
 Add the gem to your Gemfile:
 
 ```ruby
-gem "smileid"
+gem "usesmileid"
 ```
 
 Or install it directly:
 
 ```bash
-gem install smileid
+gem install usesmileid
 ```
 
 ## Getting started
@@ -28,7 +28,7 @@ gem install smileid
 Construct one client with your partner id and API key. The client is thread-safe and can be shared across your application.
 
 ```ruby
-require "smileid"
+require "usesmileid"
 
 smile = SmileID::Client.new(
   partner_id: "1234",
