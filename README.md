@@ -1,6 +1,6 @@
-# smile-identity-core
+# smileid
 
-[![Gem Version](https://img.shields.io/gem/v/smile-identity-core.svg)](https://rubygems.org/gems/smile-identity-core)
+[![Gem Version](https://img.shields.io/gem/v/smileid.svg)](https://rubygems.org/gems/smileid)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Official Smile ID server-side SDK for Ruby, covering the V3 APIs.
@@ -14,13 +14,13 @@ Requires Ruby 3.0 or later.
 Add the gem to your Gemfile:
 
 ```ruby
-gem "smile-identity-core"
+gem "smileid"
 ```
 
 Or install it directly:
 
 ```bash
-gem install smile-identity-core
+gem install smileid
 ```
 
 ## Getting started

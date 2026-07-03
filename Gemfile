@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in smile-identity-core.gemspec
+# Specify your gem's dependencies in smileid.gemspec
 gemspec
 
 group :development, :test do

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Renamed the gem from `smile-identity-core` to `smileid`. The require path
+  (`require "smileid"`) and the `SmileID` module are unchanged.
+- Set the version to 12.0.0, aligning the server SDKs with the V12 mobile
+  SDKs.
+
 ### Added
 
 - Full V3 API coverage: enhanced KYC, document verification, enhanced document
