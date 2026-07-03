@@ -69,6 +69,10 @@ module SmileID
     # SDK-local — raised by verifications.wait_until_complete when the deadline passes.
     class TimeoutError < SmileIDError; end
 
+    # A 2xx success response whose body is not the expected JSON object —
+    # typically proxy interference or an upstream contract break.
+    class UnexpectedResponseError < SmileIDError; end
+
     STATUS_CLASSES = {
       400 => InvalidRequestError,
       401 => AuthenticationError,
