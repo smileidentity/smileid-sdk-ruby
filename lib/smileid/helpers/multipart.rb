@@ -38,6 +38,9 @@ module SmileID
       PNG_CAPABLE_FIELDS = %w[document document_back].freeze
       PNG_MAGIC = "\x89PNG".b.freeze
 
+      # RFC 6838 type/subtype tokens — anything else is rejected before send.
+      MEDIA_TYPE = %r{\A[A-Za-z0-9!\#$&^_.+-]+/[A-Za-z0-9!\#$&^_.+-]+\z}
+
       DEFAULT_FILENAMES = {
         'selfie_image' => 'selfie.jpg',
         'document' => 'document.jpg',
@@ -101,11 +104,31 @@ module SmileID
 
       def binary_part(name, input, boundary, index: nil)
         upload = coerce_binary(name, input, index: index)
+        # Sanitization runs here so it covers EVERY input path — FilePart,
+        # hash, path, raw bytes, IO — including explicit content types.
+        filename = sanitize_filename(upload[:filename])
+        content_type = validate_content_type!(upload[:content_type])
         header = "--#{boundary}#{CRLF}"
         header << 'Content-Disposition: form-data; ' \
-                  "name=\"#{name}\"; filename=\"#{upload[:filename]}\"#{CRLF}"
-        header << "Content-Type: #{upload[:content_type]}#{CRLF}#{CRLF}"
+                  "name=\"#{name}\"; filename=\"#{filename}\"#{CRLF}"
+        header << "Content-Type: #{content_type}#{CRLF}#{CRLF}"
         (header.b + upload[:bytes].b + CRLF.b)
+      end
+
+      # Strip header-injection vectors from filenames: CR, LF and other
+      # control characters are removed; double quotes are percent-encoded so
+      # they cannot terminate the quoted filename attribute.
+      def sanitize_filename(filename)
+        filename.to_s.gsub(/[\x00-\x1f\x7f]/, '').gsub('"', '%22')
+      end
+
+      # Content types must be a plain media type token pair; anything else
+      # (including CR/LF injection) fails validation before send.
+      def validate_content_type!(content_type)
+        value = content_type.to_s
+        return value if value.match?(MEDIA_TYPE)
+
+        raise Errors::ValidationError.new('content_type must be a valid media type')
       end
 
       # Coerce a binary input (path, bytes, IO, Hash, or Faraday FilePart) into
