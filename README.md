@@ -42,7 +42,9 @@ Authentication is internal: the SDK fetches a short-lived token from the API, ca
 
 ### Environment selection
 
-The client uses the sandbox by default. Set `environment: :production` to go live, or pass an explicit `base_url:` to override the host entirely (it wins over `environment`).
+The client uses the sandbox by default. Set `environment: :production` to go live, or pass an explicit `base_url:` to override the host entirely (it wins over `environment`). Only `:sandbox` and `:production` are accepted.
+
+A custom `base_url` must be an absolute https URL with no query string or fragment. There is deliberately no way to use plain http. Callback URLs (`default_callback_url` and any per-request `callback_url`) must also be https; an insecure callback raises a validation error before any request is sent.
 
 | Environment | Base URL |
 |---|---|
@@ -271,6 +273,7 @@ Every API failure raises a typed error under `SmileID::Errors`, keyed on the HTT
 | `APIError` | any 5xx |
 | `ConnectionError` | network failure or timeout with no HTTP response |
 | `TimeoutError` | `wait_until_complete` deadline passed (no HTTP response) |
+| `UnexpectedResponseError` | a 2xx response whose body is not the expected JSON object, for example proxy interference |
 
 Each error exposes `status_code`, `status`, `message`, `code`, `request_id` and `raw_body`.
 
