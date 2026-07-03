@@ -36,15 +36,34 @@ RSpec.describe SmileIDExample do
       end
       stub.get('/v3/services/supported_id_types') do |env|
         expect(env.params['country']).to eq('NG')
-        json_response(200, id_types: [{ country: 'NG', label: 'National Identification Number', regex: '^\\d{11}$', required_fields: ['id_number'], type: 'NIN' }])
+        json_response(200, id_types: [{
+          country: 'NG',
+          label: 'National Identification Number',
+          regex: '^\\d{11}$',
+          required_fields: ['id_number'],
+          type: 'NIN'
+        }])
       end
       stub.get('/v3/services/supported_documents') do |env|
         expect(env.params['country_code']).to eq('NG')
-        json_response(200, valid_documents: [{ country: { code: 'NG', name: 'Nigeria', continent: 'Africa' }, id_types: [{ code: 'PASSPORT', name: 'Passport', example: ['A12345678'], has_back: false }] }])
+        json_response(200, valid_documents: [{
+          country: { code: 'NG', name: 'Nigeria', continent: 'Africa' },
+          id_types: [{
+            code: 'PASSPORT',
+            name: 'Passport',
+            example: ['A12345678'],
+            has_back: false
+          }]
+        }])
       end
     end
     out = StringIO.new
-    described_class.run(['--base-url', 'https://api.test', 'services', '--country', 'NG'], env: env, stdout: out, http_client: make_client(stubs))
+    described_class.run(
+      ['--base-url', 'https://api.test', 'services', '--country', 'NG'],
+      env: env,
+      stdout: out,
+      http_client: make_client(stubs)
+    )
 
     parsed = JSON.parse(out.string)
     expect(parsed['country']).to eq('NG')
@@ -67,17 +86,22 @@ RSpec.describe SmileIDExample do
       end
     end
     out = StringIO.new
-    described_class.run([
-      '--base-url', 'https://api.test',
-      '--callback-url', 'https://example.com/smile-callback',
-      'enhanced-kyc',
-      '--country', 'NG',
-      '--id-type', 'NIN',
-      '--id-number', '12345678901',
-      '--given-names', 'Amina',
-      '--last-name', 'Okafor',
-      '--email', 'amina@example.com'
-    ], env: env, stdout: out, http_client: make_client(stubs))
+    described_class.run(
+      [
+        '--base-url', 'https://api.test',
+        '--callback-url', 'https://example.com/smile-callback',
+        'enhanced-kyc',
+        '--country', 'NG',
+        '--id-type', 'NIN',
+        '--id-number', '12345678901',
+        '--given-names', 'Amina',
+        '--last-name', 'Okafor',
+        '--email', 'amina@example.com'
+      ],
+      env: env,
+      stdout: out,
+      http_client: make_client(stubs)
+    )
 
     parsed = JSON.parse(out.string)
     expect(parsed['job_id']).to eq('job_enhanced_123')
@@ -94,7 +118,12 @@ RSpec.describe SmileIDExample do
       end
     end
     out = StringIO.new
-    described_class.run(['--base-url', 'https://api.test', 'status', '--job-id', 'job_enhanced_123'], env: env, stdout: out, http_client: make_client(stubs))
+    described_class.run(
+      ['--base-url', 'https://api.test', 'status', '--job-id', 'job_enhanced_123'],
+      env: env,
+      stdout: out,
+      http_client: make_client(stubs)
+    )
 
     parsed = JSON.parse(out.string)
     expect(parsed['status']).to eq('complete')
@@ -111,7 +140,17 @@ RSpec.describe SmileIDExample do
       end
     end
     out = StringIO.new
-    described_class.run(['--base-url', 'https://api.test', 'replay', '--job-id', 'job_enhanced_123', '--callback-url', 'https://example.com/replay-callback'], env: env, stdout: out, http_client: make_client(stubs))
+    described_class.run(
+      [
+        '--base-url', 'https://api.test',
+        'replay',
+        '--job-id', 'job_enhanced_123',
+        '--callback-url', 'https://example.com/replay-callback'
+      ],
+      env: env,
+      stdout: out,
+      http_client: make_client(stubs)
+    )
 
     parsed = JSON.parse(out.string)
     expect(parsed['status']).to eq('success')

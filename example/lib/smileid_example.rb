@@ -80,12 +80,13 @@ module SmileIDExample
     banks = client.services.bank_codes(country: options.fetch(:country))
     id_types = client.services.supported_id_types(country: options.fetch(:country))
     docs = client.services.supported_documents(country_code: options.fetch(:country))
-    write_json(stdout, {
+    payload = {
       country: options.fetch(:country),
       bank_codes: banks.bank_codes,
       id_types: id_types.id_types,
       documents: docs.valid_documents
-    })
+    }
+    write_json(stdout, payload)
   end
 
   def run_enhanced_kyc(client, args, config, stdout)
@@ -121,13 +122,14 @@ module SmileIDExample
       ),
       callback_url: options[:callback_url]
     )
-    write_json(stdout, {
+    payload = {
       status: accepted.status,
       message: accepted.message,
       job_id: accepted.job_id,
       user_id: accepted.user_id,
       accepted: accepted.accepted?
-    })
+    }
+    write_json(stdout, payload)
   end
 
   def run_status(client, args, stdout)
@@ -136,12 +138,13 @@ module SmileIDExample
     raise UsageError, 'status requires --job-id' unless options[:job_id]
 
     status = client.verifications.retrieve(options.fetch(:job_id))
-    write_json(stdout, {
+    payload = {
       status: status.status,
       message: status.message,
       job_id: status.job_id,
       user_id: status.user_id
-    })
+    }
+    write_json(stdout, payload)
   end
 
   def run_replay(client, args, stdout)
@@ -153,12 +156,13 @@ module SmileIDExample
     raise UsageError, 'replay requires --job-id' unless options[:job_id]
 
     replay = client.verifications.replay(options.fetch(:job_id), callback_url: options[:callback_url])
-    write_json(stdout, {
+    payload = {
       status: replay.status,
       message: replay.message,
       job_id: replay.job_id,
       user_id: replay.user_id
-    })
+    }
+    write_json(stdout, payload)
   end
 
   def write_json(stdout, value)
