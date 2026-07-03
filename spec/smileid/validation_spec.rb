@@ -196,4 +196,80 @@ RSpec.describe 'client-side validation' do
       expect(client.config.base_url).to eq('https://api.smileidentity.com')
     end
   end
+
+  describe 'https-only base_url (fleet standard)' do
+    it 'rejects an http base_url with no escape hatch' do
+      expect { build_client(base_url: 'http://testapi.smileidentity.com') }
+        .to raise_error(ArgumentError, /https/)
+    end
+
+    it 'rejects a relative base_url' do
+      expect { build_client(base_url: 'testapi.smileidentity.com') }
+        .to raise_error(ArgumentError, /base_url/)
+    end
+
+    it 'rejects a base_url with a query string' do
+      expect { build_client(base_url: 'https://testapi.smileidentity.com?x=1') }
+        .to raise_error(ArgumentError, /query or fragment/)
+    end
+
+    it 'rejects a base_url with a fragment' do
+      expect { build_client(base_url: 'https://testapi.smileidentity.com#frag') }
+        .to raise_error(ArgumentError, /query or fragment/)
+    end
+
+    it 'rejects an unparseable base_url' do
+      expect { build_client(base_url: 'https://bad url with spaces') }
+        .to raise_error(ArgumentError, /base_url/)
+    end
+  end
+
+  describe 'https-only callback URLs (fleet standard)' do
+    it 'rejects an http default_callback_url at construction' do
+      expect { build_client(default_callback_url: 'http://app.example.com/cb') }
+        .to raise_error(SmileID::Errors::ValidationError, /https/)
+    end
+
+    it 'rejects a relative default_callback_url at construction' do
+      expect { build_client(default_callback_url: 'app.example.com/cb') }
+        .to raise_error(SmileID::Errors::ValidationError, /callback/)
+    end
+
+    it 'rejects an http per-request callback_url on entry operations before sending' do
+      expect do
+        client.enhanced_kyc.verify(
+          country: 'NG', id_type: 'NIN', id_number: '1',
+          user_details: valid_user_details, consent: valid_consent,
+          callback_url: 'http://app.example.com/cb'
+        )
+      end.to raise_error(SmileID::Errors::ValidationError, /https/)
+      expect(WebMock).not_to have_requested(:any, //)
+    end
+
+    it 'rejects an http callback_url on replay before sending' do
+      expect do
+        client.verifications.replay('job_01h8x9y2z3a4b5c6d7e8f9g0h1',
+                                    callback_url: 'http://app.example.com/cb')
+      end.to raise_error(SmileID::Errors::ValidationError, /https/)
+      expect(WebMock).not_to have_requested(:any, //)
+    end
+
+    it 'accepts an https per-request callback_url' do
+      stub_token
+      captured = nil
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/enhanced_kyc")
+        .to_return do |request|
+          captured = request
+          { status: 202, body: accepted_body, headers: { 'Content-Type' => 'application/json' } }
+        end
+
+      client.enhanced_kyc.verify(
+        country: 'NG', id_type: 'NIN', id_number: '1',
+        user_details: valid_user_details, consent: valid_consent,
+        callback_url: 'https://app.example.com/cb'
+      )
+      expect(captured.body.dup.force_encoding('UTF-8'))
+        .to include("name=\"callback_url\"\r\n\r\nhttps://app.example.com/cb")
+    end
+  end
 end
