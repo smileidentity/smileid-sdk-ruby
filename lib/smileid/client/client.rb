@@ -2,7 +2,6 @@
 
 require 'erb'
 require 'json'
-require 'openssl'
 
 module SmileID
   # The Smile ID client (spec section 2.1, 4). Construct once, then call
@@ -10,12 +9,12 @@ module SmileID
   class Client
     attr_reader :config
 
-    def initialize(partner_id:, api_key:, environment: :sandbox, partner_secret: nil,
+    def initialize(partner_id:, api_key:, environment: :sandbox,
                    default_callback_url: nil, base_url: nil, timeout: Config::DEFAULT_TIMEOUT,
                    max_retries: Config::DEFAULT_MAX_RETRIES, http_client: nil)
       @config = Config.new(
         partner_id: partner_id, api_key: api_key, environment: environment,
-        partner_secret: partner_secret, default_callback_url: default_callback_url,
+        default_callback_url: default_callback_url,
         base_url: base_url, timeout: timeout, max_retries: max_retries, http_client: http_client
       )
       @transport = Transport.new(@config)
@@ -62,7 +61,7 @@ module SmileID
       refreshed = false
 
       loop do
-        headers = build_headers(op, content_type, user_id_header, body)
+        headers = build_headers(op, content_type, user_id_header)
         response = @transport.send_request(
           method: op.http_method, url: url, headers: headers, query: query || {},
           body: body, retryable: op.idempotent, timeout: timeout
@@ -91,27 +90,13 @@ module SmileID
       end
     end
 
-    def build_headers(op, content_type, user_id_header, body)
+    def build_headers(op, content_type, user_id_header)
       headers = Telemetry.headers
       headers['Content-Type'] = content_type if content_type
       headers['SmileID-Token'] = @token_manager.token if op.authenticated
       headers['SmileID-Partner-ID'] = @config.partner_id if op.partner_id_header
       headers['User-ID'] = user_id_header if user_id_header
-      sign(headers, body)
       headers
-    end
-
-    # HMAC request signing (spec section 2.5). OFF unless partner_secret is set.
-    # Provisional construction — confirm with the backend before production use.
-    def sign(headers, body)
-      return unless @config.signing_enabled?
-
-      timestamp = Time.now.utc.strftime('%Y-%m-%dT%H:%M:%S.%LZ')
-      signature = OpenSSL::HMAC.hexdigest(
-        'SHA256', @config.partner_secret, timestamp + body.to_s
-      )
-      headers['SmileID-Timestamp'] = timestamp
-      headers['SmileID-Request-Signature'] = signature
     end
 
     def handle(op, response)

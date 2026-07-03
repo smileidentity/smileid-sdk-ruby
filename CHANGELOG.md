@@ -45,4 +45,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   idempotent calls only.
 - Consent builder and client-side validation for user details and fraud
   reports.
-- Optional HMAC request signing, off unless `partner_secret` is configured.
+
+### Removed
+
+- The `partner_secret` option and HMAC request signing (the
+  `SmileID-Timestamp` and `SmileID-Request-Signature` headers). Product
+  decision: request signing confused partners for little benefit. It can be
+  reintroduced if a signing contract is agreed with the backend.
