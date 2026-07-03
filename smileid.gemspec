@@ -3,7 +3,7 @@
 require_relative 'lib/smileid/version'
 
 Gem::Specification.new do |spec|
-  spec.name = 'smile-identity-core'
+  spec.name = 'smileid'
   spec.version = SmileID::VERSION
   spec.authors = ['Smile Identity']
   spec.email = ['support@smileidentity.com']
