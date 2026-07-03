@@ -69,6 +69,9 @@ module SmileID
     # SDK-local — raised by verifications.wait_until_complete when the deadline passes.
     class TimeoutError < SmileIDError; end
 
+    # SDK-local — a 2xx response did not contain the expected JSON object.
+    class UnexpectedResponseError < SmileIDError; end
+
     STATUS_CLASSES = {
       400 => InvalidRequestError,
       401 => AuthenticationError,

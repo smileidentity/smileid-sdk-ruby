@@ -126,4 +126,16 @@ RSpec.describe SmileID::Helpers::Multipart do
     expect(body).to include('Content-Type: image/png')
     expect(body).to include('doc-bytes')
   end
+
+  it 'rejects filenames that could inject multipart headers' do
+    expect do
+      build('document' => { bytes: 'doc', filename: "front.jpg\"\r\nX-Injected: yes" })
+    end.to raise_error(SmileID::Errors::ValidationError, /filename/)
+  end
+
+  it 'rejects unsafe explicit content types' do
+    expect do
+      build('document' => { bytes: 'doc', filename: 'front.jpg', content_type: "image/jpeg\r\nX: y" })
+    end.to raise_error(SmileID::Errors::ValidationError, /content_type/)
+  end
 end

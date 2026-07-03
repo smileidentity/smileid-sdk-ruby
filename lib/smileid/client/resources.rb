@@ -23,7 +23,9 @@ module SmileID
 
       # Use an explicit callback_url, else fall back to the configured default.
       def resolve_callback(callback_url)
-        callback_url || @client.config.default_callback_url
+        resolved = callback_url || @client.config.default_callback_url
+        Config.validate_callback_url!(resolved) if resolved
+        resolved
       end
 
       def accepted(response)

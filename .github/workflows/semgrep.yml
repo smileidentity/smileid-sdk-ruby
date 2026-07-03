@@ -22,7 +22,6 @@ jobs:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v4
 
       - name: Run Semgrep
-        continue-on-error: true
         run: semgrep scan --config p/security-audit --sarif -o semgrep.sarif
 
       - name: Upload SARIF to GitHub Security
@@ -85,8 +84,8 @@ jobs:
               if len(findings) > 25:
                   body += f"\n*... and {len(findings) - 25} more. "
                   body += "See full results in workflow logs.*\n"
-              body += "\n> ⚠️ These findings are **non-blocking**. "
-              body += "Please review and address as appropriate.\n"
+              body += "\n> These findings block the Semgrep job. "
+              body += "Please review and address or suppress reviewed false positives.\n"
           else:
               body = f"{marker}\n## 🔍 Semgrep Security Scan Results\n\n"
               body += "✅ No security findings detected by "

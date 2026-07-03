@@ -102,7 +102,6 @@ module SmileID
     end
 
     # HMAC request signing (spec section 2.5). OFF unless partner_secret is set.
-    # Provisional construction — confirm with the backend before production use.
     def sign(headers, body)
       return unless @config.signing_enabled?
 
@@ -115,7 +114,16 @@ module SmileID
     end
 
     def handle(op, response)
-      return response if op.success_statuses.include?(response.status)
+      if op.success_statuses.include?(response.status)
+        return response if response.json.is_a?(Hash)
+
+        raise Errors::UnexpectedResponseError.new(
+          'expected a JSON object response',
+          status_code: response.status,
+          request_id: Errors.request_id_from(response.headers),
+          raw_body: response.raw_body
+        )
+      end
 
       raise Errors.from_response(
         status_code: response.status,

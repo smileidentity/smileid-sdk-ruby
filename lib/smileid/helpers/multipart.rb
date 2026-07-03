@@ -46,6 +46,8 @@ module SmileID
       }.freeze
 
       CRLF = "\r\n"
+      HEADER_PARAM = /\A[^\x00-\x1f\x7f"\\]+\z/
+      CONTENT_TYPE = %r{\A[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+\z}
 
       module_function
 
@@ -146,7 +148,19 @@ module SmileID
         else
           upload[:content_type] = default
         end
+        sanitize_upload!(upload)
         upload
+      end
+
+      def sanitize_upload!(upload)
+        filename = upload[:filename].to_s
+        unless filename.match?(HEADER_PARAM)
+          raise Errors::ValidationError.new('filename contains unsafe multipart header characters')
+        end
+        content_type = upload[:content_type].to_s
+        unless content_type.match?(CONTENT_TYPE)
+          raise Errors::ValidationError.new('content_type must be a valid MIME type')
+        end
       end
 
       def png?(upload)

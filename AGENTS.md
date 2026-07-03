@@ -8,12 +8,10 @@ The API surface — endpoints, request shapes, response shapes — comes from th
 
 ## Layout
 
-- `lib/smileid/generated/` will hold code produced by the generator. It's owned by the generation pipeline — don't hand-edit it, regenerate it instead.
-- `lib/smileid/client/` will hold hand-written client code that wraps the generated layer.
-- `lib/smileid/errors/` will hold hand-written error classes.
-- `lib/smileid/helpers/` will hold hand-written helper utilities.
-
-These directories don't exist yet in this scaffold. They'll be added as the SDK is built out.
+- `lib/smileid/generated/` contains the current generated-layer request/response tables. Treat it as generator-owned when a generator is available; until then, keep edits tightly scoped and mirrored in tests.
+- `lib/smileid/client/` contains hand-written client code that wraps the generated layer.
+- `lib/smileid/errors.rb` contains hand-written error classes.
+- `lib/smileid/helpers/` contains hand-written helper utilities.
 
 ## Running tests
 

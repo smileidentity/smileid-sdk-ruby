@@ -187,6 +187,25 @@ RSpec.describe 'client-side validation' do
         .to raise_error(ArgumentError, /environment/)
     end
 
+    it 'rejects an insecure base_url override' do
+      expect { build_client(base_url: 'http://api.example.com') }
+        .to raise_error(ArgumentError, /base_url/)
+    end
+
+    it 'rejects insecure default and per-request callback URLs' do
+      expect { build_client(default_callback_url: 'http://partner.example.com/webhook') }
+        .to raise_error(ArgumentError, /default_callback_url/)
+
+      expect do
+        client.enhanced_kyc.verify(
+          country: 'NG', id_type: 'NIN', id_number: '1',
+          user_details: valid_user_details, consent: valid_consent,
+          callback_url: 'http://partner.example.com/webhook'
+        )
+      end.to raise_error(ArgumentError, /callback_url/)
+      expect(WebMock).not_to have_requested(:any, //)
+    end
+
     it 'defaults to sandbox' do
       expect(build_client.config.base_url).to eq('https://testapi.smileidentity.com')
     end
@@ -194,6 +213,26 @@ RSpec.describe 'client-side validation' do
     it 'selects the production base URL' do
       client = build_client(environment: :production)
       expect(client.config.base_url).to eq('https://api.smileidentity.com')
+    end
+  end
+
+  describe 'successful response parsing' do
+    it 'raises a typed error for malformed JSON on a success status' do
+      stub_token
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/enhanced_kyc")
+        .to_return(status: 202, body: '<html>not json</html>',
+                   headers: { 'X-Request-ID' => 'req_123' })
+
+      expect do
+        client.enhanced_kyc.verify(
+          country: 'NG', id_type: 'NIN', id_number: '1',
+          user_details: valid_user_details, consent: valid_consent
+        )
+      end.to raise_error(SmileID::Errors::UnexpectedResponseError) { |error|
+        expect(error.status_code).to eq(202)
+        expect(error.request_id).to eq('req_123')
+        expect(error.raw_body).to eq('<html>not json</html>')
+      }
     end
   end
 end
