@@ -57,7 +57,6 @@ A custom `base_url` must be an absolute https URL with no query string or fragme
 |---|---|---|
 | `timeout` | 30 | Per-request timeout in seconds. Every method also accepts a per-call `timeout:` override. |
 | `max_retries` | 2 | Retries for idempotent calls only (status and services reads, and the internal token fetch). Job submissions are never retried automatically. |
-| `partner_secret` | unset | Enables HMAC request signing when set. See the note below. |
 | `http_client` | SDK default | Inject your own `Faraday::Connection` for testing or proxies. |
 
 ## Shared inputs
@@ -291,10 +290,6 @@ end
 ## Telemetry
 
 The SDK sends three telemetry headers on every request: `SmileID-Source-SDK` (`ruby`), `SmileID-Source-SDK-Version` and a `User-Agent` identifying the SDK and Ruby version. These identify the SDK for observability. They are never used for authentication and carry no personal data.
-
-## HMAC request signing
-
-Off by default. When you set `partner_secret` on the client, the SDK signs each request by adding `SmileID-Timestamp` and `SmileID-Request-Signature` headers (HMAC-SHA256 over the timestamp and the raw request body). The exact signature construction is provisional and may change before general availability — do not enable it in production until Smile ID confirms the contract.
 
 ## Development
 

@@ -18,27 +18,21 @@ module SmileID
     DEFAULT_TIMEOUT = 30
     DEFAULT_MAX_RETRIES = 2
 
-    attr_reader :partner_id, :api_key, :environment, :partner_secret,
+    attr_reader :partner_id, :api_key, :environment,
                 :default_callback_url, :base_url, :timeout, :max_retries, :http_client
 
-    def initialize(partner_id:, api_key:, environment: :sandbox, partner_secret: nil,
+    def initialize(partner_id:, api_key:, environment: :sandbox,
                    default_callback_url: nil, base_url: nil, timeout: DEFAULT_TIMEOUT,
                    max_retries: DEFAULT_MAX_RETRIES, http_client: nil)
       @partner_id = partner_id.to_s
       @api_key = api_key.to_s
       @environment = normalize_environment(environment)
-      @partner_secret = partner_secret
       @default_callback_url = default_callback_url
       @timeout = timeout
       @max_retries = max_retries
       @http_client = http_client
       @base_url = (base_url || BASE_URLS.fetch(@environment)).chomp('/')
       validate!
-    end
-
-    # True when HMAC request signing is enabled (spec section 2.5).
-    def signing_enabled?
-      !partner_secret.nil? && !partner_secret.to_s.empty?
     end
 
     # Validate that a callback URL is an absolute https URL. Raises the local

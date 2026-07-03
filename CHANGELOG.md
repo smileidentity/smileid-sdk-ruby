@@ -45,4 +45,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   idempotent calls only.
 - Consent builder and client-side validation for user details and fraud
   reports.
-- Optional HMAC request signing, off unless `partner_secret` is configured.
