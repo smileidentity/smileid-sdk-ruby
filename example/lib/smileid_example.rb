@@ -21,7 +21,6 @@ module SmileIDExample
     client = SmileID::Client.new(
       partner_id: config.fetch(:partner_id),
       api_key: config.fetch(:api_key),
-      partner_secret: config[:partner_secret],
       base_url: config[:base_url],
       default_callback_url: config[:callback_url],
       timeout: config.fetch(:timeout),
@@ -47,7 +46,6 @@ module SmileIDExample
     config = {
       partner_id: env['SMILE_PARTNER_ID'].to_s,
       api_key: env['SMILE_API_KEY'].to_s,
-      partner_secret: blank_to_nil(env['SMILE_PARTNER_SECRET']),
       base_url: blank_to_nil(env['SMILE_BASE_URL']),
       callback_url: blank_to_nil(env['SMILE_CALLBACK_URL']),
       timeout: (env['SMILE_TIMEOUT'] || '30').to_f
@@ -55,7 +53,6 @@ module SmileIDExample
     parser = OptionParser.new do |opts|
       opts.on('--partner-id VALUE') { |value| config[:partner_id] = value }
       opts.on('--api-key VALUE') { |value| config[:api_key] = value }
-      opts.on('--partner-secret VALUE') { |value| config[:partner_secret] = value }
       opts.on('--base-url VALUE') { |value| config[:base_url] = value }
       opts.on('--callback-url VALUE') { |value| config[:callback_url] = value }
       opts.on('--timeout VALUE', Float) { |value| config[:timeout] = value }
@@ -182,7 +179,7 @@ module SmileIDExample
         smileid-example-ruby [global flags] status --job-id job_...
         smileid-example-ruby [global flags] replay --job-id job_... --callback-url https://example.com/webhook
 
-      Global flags can also be set with SMILE_PARTNER_ID, SMILE_API_KEY, SMILE_PARTNER_SECRET, SMILE_BASE_URL, SMILE_CALLBACK_URL and SMILE_TIMEOUT.
+      Global flags can also be set with SMILE_PARTNER_ID, SMILE_API_KEY, SMILE_BASE_URL, SMILE_CALLBACK_URL and SMILE_TIMEOUT.
     USAGE
   end
 end
