@@ -2,7 +2,7 @@
 
 source 'https://rubygems.org'
 
-# Specify your gem's dependencies in smileid.gemspec
+# Specify your gem's dependencies in usesmileid.gemspec
 gemspec
 
 group :development, :test do

@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-require_relative 'lib/smileid/version'
+require_relative 'lib/usesmileid/version'
 
 Gem::Specification.new do |spec|
-  spec.name = 'smileid'
+  spec.name = 'usesmileid'
   spec.version = SmileID::VERSION
   spec.authors = ['Smile Identity']
   spec.email = ['support@smileidentity.com']
