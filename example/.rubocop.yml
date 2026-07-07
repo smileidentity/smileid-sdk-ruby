@@ -1,0 +1,27 @@
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 3.0
+  Exclude:
+    - vendor/**/*
+
+Style/Documentation:
+  Enabled: false
+
+Gemspec/RequireMFA:
+  Enabled: false
+
+Metrics/ModuleLength:
+  Max: 250
+
+Metrics/MethodLength:
+  Max: 40
+
+Metrics/AbcSize:
+  Max: 55
+
+Metrics/BlockLength:
+  Exclude:
+    - spec/**/*_spec.rb
+
+Layout/LineLength:
+  Max: 120
