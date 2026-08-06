@@ -183,8 +183,8 @@ RSpec.describe 'request routing' do
     end
   end
 
-  describe 'verifications.replay (spec 6.10)' do
-    it 'sends a JSON body, not multipart' do
+  describe 'verifications.replay (spec 6.10, multipart body)' do
+    it 'sends a multipart body with a single callback_url text part' do
       captured = nil
       stub_request(:post, "#{TestHelpers::SANDBOX}/v3/replay/job_01h8x9y2z3a4b5c6d7e8f9g0h1")
         .to_return do |request|
@@ -199,12 +199,15 @@ RSpec.describe 'request routing' do
         'job_01h8x9y2z3a4b5c6d7e8f9g0h1', callback_url: 'https://example.com/cb'
       )
 
-      expect(captured.headers['Content-Type']).to eq('application/json')
-      expect(JSON.parse(captured.body)).to eq('callback_url' => 'https://example.com/cb')
+      expect(captured.headers['Content-Type']).to start_with('multipart/form-data; boundary=')
+      body = captured.body.dup.force_encoding('UTF-8')
+      expect(body).to include('Content-Disposition: form-data; name="callback_url"' \
+                              "\r\n\r\nhttps://example.com/cb\r\n")
+      expect(body.scan('Content-Disposition').length).to eq(1)
       expect(response.accepted?).to be(true)
     end
 
-    it 'sends no body when callback_url is omitted' do
+    it 'sends no body and no content type when callback_url is omitted' do
       captured = nil
       stub_request(:post, "#{TestHelpers::SANDBOX}/v3/replay/job_01h8x9y2z3a4b5c6d7e8f9g0h1")
         .to_return do |request|
@@ -217,6 +220,8 @@ RSpec.describe 'request routing' do
 
       client.verifications.replay('job_01h8x9y2z3a4b5c6d7e8f9g0h1')
       expect(captured.body.to_s).to eq('')
+      expect(captured.headers['Content-Type'].to_s).not_to include('json')
+      expect(captured.headers['Content-Type'].to_s).not_to include('multipart')
     end
   end
 

@@ -224,11 +224,13 @@ module SmileID
         end
       end
 
+      # The optional callback_url override goes in a multipart body (any other
+      # content type gets a 415 from the backend); no override, no body.
       def replay(job_id, callback_url: nil, timeout: nil)
         Config.validate_callback_url!(callback_url) if callback_url
-        json = callback_url ? { 'callback_url' => callback_url } : nil
+        form = callback_url ? { 'callback_url' => callback_url } : nil
         response = @client.call(:replay, path_params: { 'job_id' => job_id },
-                                         json: json, timeout: timeout)
+                                         form: form, timeout: timeout)
         Generated::Models::AcceptedStatusResponse.from(response.json)
       end
 
