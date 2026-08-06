@@ -143,8 +143,12 @@ RSpec.describe SmileIDExample do
     stubs = Faraday::Adapter::Test::Stubs.new do |stub|
       stub.post('/v3/token') { json_response(200, token: jwt) }
       stub.post('/v3/replay/job_enhanced_123') do |env|
-        expect(JSON.parse(env.body)).to eq('callback_url' => 'https://example.com/replay-callback')
-        json_response(200, status: 'success', message: 'replayed', job_id: 'job_enhanced_123', user_id: 'user_123')
+        expect(env.request_headers['Content-Type']).to start_with('multipart/form-data; boundary=')
+        expect(env.body.dup.force_encoding('UTF-8')).to include(
+          "Content-Disposition: form-data; name=\"callback_url\"\r\n\r\n" \
+          "https://example.com/replay-callback\r\n"
+        )
+        json_response(202, status: 'accepted', message: 'replayed', job_id: 'job_enhanced_123', user_id: 'user_123')
       end
     end
     out = StringIO.new
@@ -161,7 +165,7 @@ RSpec.describe SmileIDExample do
     )
 
     parsed = JSON.parse(out.string)
-    expect(parsed['status']).to eq('success')
+    expect(parsed['status']).to eq('accepted')
     expect(parsed['job_id']).to eq('job_enhanced_123')
     stubs.verify_stubbed_calls
   end

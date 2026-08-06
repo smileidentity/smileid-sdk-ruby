@@ -2,7 +2,7 @@
 
 require 'json'
 require 'optparse'
-require 'smileid'
+require 'usesmileid'
 
 module SmileIDExample
   class UsageError < StandardError; end
