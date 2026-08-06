@@ -54,10 +54,10 @@ module SmileID
     # return the response or raise a typed error (spec section 2A, 7).
     #
     # @return [SmileID::Response] on a success status for the operation.
-    def call(op_key, form: nil, json: nil, path_params: {}, query: {}, user_id_header: nil, timeout: nil)
+    def call(op_key, form: nil, path_params: {}, query: {}, user_id_header: nil, timeout: nil)
       op = Generated::Operations.fetch(op_key)
       url = @config.base_url + interpolate(op.path, path_params)
-      content_type, body = serialize(op, form, json)
+      content_type, body = serialize(op, form)
       refreshed = false
 
       loop do
@@ -79,15 +79,13 @@ module SmileID
 
     private
 
-    def serialize(op, form, json)
-      case op.body_kind
-      when :multipart
-        Helpers::Multipart.build(form || {})
-      when :json
-        json.nil? ? [nil, nil] : ['application/json', JSON.generate(json)]
-      else
-        [nil, nil]
-      end
+    # Multipart bodies only; an op with an optional body (replay) sends no
+    # body at all when there are no fields.
+    def serialize(op, form)
+      return [nil, nil] unless op.body_kind == :multipart
+      return [nil, nil] if form.nil? || form.empty?
+
+      Helpers::Multipart.build(form)
     end
 
     def build_headers(op, content_type, user_id_header)

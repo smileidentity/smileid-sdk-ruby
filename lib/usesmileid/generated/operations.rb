@@ -60,7 +60,7 @@ module SmileID
         ),
         replay: Operation.new(
           http_method: :post, path: '/v3/replay/{job_id}', authenticated: true,
-          partner_id_header: false, body_kind: :json, idempotent: false,
+          partner_id_header: false, body_kind: :multipart, idempotent: false,
           success_statuses: [202]
         ),
         report_fraud: Operation.new(
