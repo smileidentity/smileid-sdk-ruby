@@ -26,6 +26,12 @@ jobs:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
     - run: bundle exec rspec
+    - name: Run example app tests
+      working-directory: example
+      env:
+        # The example has no tracked lockfile; resolve it fresh.
+        BUNDLE_FROZEN: "false"
+      run: bundle install && bundle exec rspec
   lint:
     runs-on: ubuntu-latest
     steps:
