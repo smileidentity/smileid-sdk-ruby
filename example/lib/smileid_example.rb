@@ -175,11 +175,15 @@ module SmileIDExample
     <<~USAGE
       Usage:
         smileid-example-ruby [global flags] services --country NG
-        smileid-example-ruby [global flags] enhanced-kyc --country NG --id-type NIN --id-number 12345678901 --given-names Amina --last-name Okafor --email amina@example.com --privacy-url https://example.com/privacy
+        smileid-example-ruby [global flags] enhanced-kyc --country NG --id-type NIN --id-number 12345678901 --given-names "Amina Fatou" --last-name Clearwater --email amina.clearwater@example.com --privacy-url https://example.com/privacy
         smileid-example-ruby [global flags] status --job-id job_...
         smileid-example-ruby [global flags] replay --job-id job_... --callback-url https://example.com/webhook
 
       Global flags can also be set with SMILE_PARTNER_ID, SMILE_API_KEY, SMILE_BASE_URL, SMILE_CALLBACK_URL and SMILE_TIMEOUT.
+
+      Partner ids are displayed zero-padded (for example 002) but must be passed without leading zeros (2).
+      SMILE_BASE_URL or --base-url points the CLI at a host other than sandbox or production, for example https://devapi.smileidentity.com.
+      Non-production environments match test identities on given names + last name + email; an unrecognised identity resolves to block.
     USAGE
   end
 end

@@ -38,18 +38,32 @@ smile = SmileID::Client.new(
 )
 ```
 
+Partner ids are displayed zero-padded (for example 002) but must be passed without leading zeros (2).
+
 Authentication is internal: the SDK fetches a short-lived token from the API, caches it until just before expiry, and refreshes it once automatically if a request returns 401. You never see or pass a token.
 
 ### Environment selection
 
-The client uses the sandbox by default. Set `environment: :production` to go live, or pass an explicit `base_url:` to override the host entirely (it wins over `environment`). Only `:sandbox` and `:production` are accepted.
-
-A custom `base_url` must be an absolute https URL with no query string or fragment. There is deliberately no way to use plain http. Callback URLs (`default_callback_url` and any per-request `callback_url`) must also be https; an insecure callback raises a validation error before any request is sent.
+The client uses the sandbox by default. Set `environment: :production` to go live. Only `:sandbox` and `:production` are named.
 
 | Environment | Base URL |
 |---|---|
 | `:sandbox` (default) | `https://testapi.smileidentity.com` |
 | `:production` | `https://api.smileidentity.com` |
+
+Any other host needs an explicit `base_url:`, which wins over `environment`:
+
+```ruby
+smile = SmileID::Client.new(
+  partner_id: "2",
+  api_key: ENV.fetch("SMILE_API_KEY"),
+  base_url: "https://devapi.smileidentity.com"
+)
+```
+
+A custom `base_url` must be an absolute https URL with no query string or fragment. There is deliberately no way to use plain http. Callback URLs (`default_callback_url` and any per-request `callback_url`) must also be https; an insecure callback raises a validation error before any request is sent.
+
+Non-production environments match test identities on given names + last name + email; an unrecognised identity resolves to `block`.
 
 ### Other client options
 
@@ -187,9 +201,9 @@ accepted = smile.biometric.compare(
 
 ```ruby
 status = smile.verifications.retrieve("job_01h8x9y2z3a4b5c6d7e8f9g0h1")
-status.status      # "complete", "processing" or "not_found"
-status.complete?   # true when terminal
-status.message     # e.g. "Verification completed with state: clear"
+status.status      # "processing", "not_found", or the decision: "clear", "block", "attention", "error"
+status.complete?   # true when terminal, i.e. neither processing nor not_found
+status.message     # e.g. "Job completed"
 ```
 
 A job the API does not know yet returns a status of `not_found` rather than raising an error, so you can poll safely right after submission.
@@ -204,7 +218,7 @@ status = smile.verifications.wait_until_complete(
 )
 ```
 
-Raises `SmileID::Errors::TimeoutError` if the job does not complete in time. Pass `treat_not_found_as_pending: false` to return immediately when the job is unknown instead of polling on.
+Polling stops as soon as the job reaches a terminal decision (`clear`, `block`, `attention` or `error`). Raises `SmileID::Errors::TimeoutError` if the job does not complete in time. Pass `treat_not_found_as_pending: false` to return immediately when the job is unknown instead of polling on.
 
 ### Replay a callback
 
@@ -299,7 +313,7 @@ bundle exec rspec     # unit tests, fully offline
 bundle exec rubocop
 ```
 
-The end-to-end sandbox test runs only when `SMILE_PARTNER_ID` and `SMILE_API_KEY` are set in the environment; otherwise it skips.
+The end-to-end sandbox test runs only when `SMILE_PARTNER_ID` and `SMILE_API_KEY` are set in the environment; otherwise it skips. Set `SMILE_BASE_URL` to run it against a host other than the sandbox.
 
 ## Contributing
 

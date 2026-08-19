@@ -89,7 +89,7 @@ RSpec.describe SmileIDExample do
         expect(body).to include('name="country"', 'NG')
         expect(body).to include('name="id_type"', 'NIN')
         expect(body).to include('https://example.com/smile-callback')
-        expect(body).to include('"given_names":"Amina"')
+        expect(body).to include('"given_names":"Amina Fatou"')
         json_response(202, status: 'Accepted', message: 'submitted', job_id: 'job_enhanced_123', user_id: 'user_123')
       end
     end
@@ -102,9 +102,9 @@ RSpec.describe SmileIDExample do
         '--country', 'NG',
         '--id-type', 'NIN',
         '--id-number', '12345678901',
-        '--given-names', 'Amina',
-        '--last-name', 'Okafor',
-        '--email', 'amina@example.com'
+        '--given-names', 'Amina Fatou',
+        '--last-name', 'Clearwater',
+        '--email', 'amina.clearwater@example.com'
       ],
       env: env,
       stdout: out,
@@ -122,7 +122,8 @@ RSpec.describe SmileIDExample do
       stub.post('/v3/token') { json_response(200, token: jwt) }
       stub.get('/v3/status/job_enhanced_123') do |env|
         expect(env.request_headers['SmileID-Token']).to start_with('eyJ')
-        json_response(200, status: 'complete', message: 'clear', job_id: 'job_enhanced_123', user_id: 'user_123')
+        json_response(200, status: 'clear', message: 'Job completed', job_id: 'job_enhanced_123',
+                           user_id: 'user_123')
       end
     end
     out = StringIO.new
@@ -134,8 +135,8 @@ RSpec.describe SmileIDExample do
     )
 
     parsed = JSON.parse(out.string)
-    expect(parsed['status']).to eq('complete')
-    expect(parsed['message']).to eq('clear')
+    expect(parsed['status']).to eq('clear')
+    expect(parsed['message']).to eq('Job completed')
     stubs.verify_stubbed_calls
   end
 

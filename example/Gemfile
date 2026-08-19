@@ -2,6 +2,10 @@
 
 source 'https://rubygems.org'
 
+# Puts this example's own lib/ on the load path, so `require 'smileid_example'`
+# works without RUBYOPT tricks.
+gemspec
+
 gem 'usesmileid', path: '..'
 
 group :development, :test do
