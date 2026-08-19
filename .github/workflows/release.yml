@@ -8,6 +8,12 @@ on:
 permissions:
   contents: read
 
+# One publish at a time per tag, so a re-pushed tag can't race itself on
+# `gem push` or `gh release create`.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   guard:
     name: Guard tag matches gem version
@@ -49,8 +55,12 @@ jobs:
           ruby-version: .ruby-version
           bundler-cache: true
 
+      # Build to a fixed filename so the push below names one exact file.
+      # A `usesmileid-*.gem` glob would pass several arguments to `gem push`
+      # if a second .gem ever landed in the workspace, or a literal
+      # unexpanded filename if none did.
       - name: Build gem
-        run: gem build usesmileid.gemspec
+        run: gem build usesmileid.gemspec -o usesmileid.gem
 
       # Trusted publishing exchanges this job's OIDC token for a short-lived
       # RubyGems.org push credential — no RUBYGEMS_API_KEY secret needed, as
@@ -60,7 +70,7 @@ jobs:
         uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
 
       - name: Push gem to RubyGems.org
-        run: gem push usesmileid-*.gem
+        run: gem push usesmileid.gem
 
       - name: Create GitHub release
         env:
