@@ -59,7 +59,7 @@ module SmileID
           next
         end
         return response
-      rescue Faraday::TimeoutError, Faraday::ConnectionFailed => e
+      rescue Faraday::TimeoutError, Faraday::ConnectionFailed, Faraday::SSLError => e
         raise Errors::ConnectionError.new(e.message) unless retryable && attempt < @config.max_retries
 
         sleep_for(backoff(attempt, nil))

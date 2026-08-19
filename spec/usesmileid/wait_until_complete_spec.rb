@@ -13,8 +13,10 @@ RSpec.describe 'verifications.wait_until_complete' do
     allow(verifications).to receive(:sleep_interval)
   end
 
-  def job_body(status, message = nil)
-    { status: (status == 'complete' ? 200 : 202),
+  # The wire returns the decision itself as `status`; only `processing` and
+  # `not_found` are non-terminal.
+  def job_body(status, message = 'Job completed')
+    { status: (status == 'processing' ? 202 : 200),
       body: JSON.generate(status: status, job_id: job_id, message: message),
       headers: { 'Content-Type' => 'application/json' } }
   end
@@ -26,20 +28,39 @@ RSpec.describe 'verifications.wait_until_complete' do
       headers: { 'Content-Type' => 'application/json' } }
   end
 
-  it 'polls until the job completes' do
+  it 'polls until the job reaches a clear decision' do
     stub = stub_request(:get, "#{TestHelpers::SANDBOX}/v3/status/#{job_id}")
-           .to_return(job_body('processing'), job_body('processing'),
-                      job_body('complete', 'Verification completed with state: clear'))
+           .to_return(job_body('processing'), job_body('processing'), job_body('clear'))
 
     status = verifications.wait_until_complete(job_id)
     expect(status.complete?).to be(true)
-    expect(status.message).to eq('Verification completed with state: clear')
+    expect(status.status).to eq('clear')
+    expect(status.message).to eq('Job completed')
     expect(stub).to have_been_requested.times(3)
+  end
+
+  it 'returns on a block decision too' do
+    stub = stub_request(:get, "#{TestHelpers::SANDBOX}/v3/status/#{job_id}")
+           .to_return(job_body('processing'), job_body('block'))
+
+    status = verifications.wait_until_complete(job_id)
+    expect(status.complete?).to be(true)
+    expect(status.status).to eq('block')
+    expect(stub).to have_been_requested.times(2)
+  end
+
+  it 'keeps polling while the job is processing' do
+    stub_request(:get, "#{TestHelpers::SANDBOX}/v3/status/#{job_id}")
+      .to_return(job_body('processing'), job_body('processing'), job_body('attention'))
+
+    status = verifications.wait_until_complete(job_id)
+    expect(status.status).to eq('attention')
+    expect(verifications).to have_received(:sleep_interval).twice
   end
 
   it 'sleeps for the configured interval between polls' do
     stub_request(:get, "#{TestHelpers::SANDBOX}/v3/status/#{job_id}")
-      .to_return(job_body('processing'), job_body('complete'))
+      .to_return(job_body('processing'), job_body('clear'))
 
     verifications.wait_until_complete(job_id, interval: 5)
     expect(verifications).to have_received(:sleep_interval).with(5).once
@@ -47,7 +68,7 @@ RSpec.describe 'verifications.wait_until_complete' do
 
   it 'treats not_found as pending by default' do
     stub = stub_request(:get, "#{TestHelpers::SANDBOX}/v3/status/#{job_id}")
-           .to_return(not_found_body, job_body('complete'))
+           .to_return(not_found_body, job_body('clear'))
 
     status = verifications.wait_until_complete(job_id)
     expect(status.complete?).to be(true)

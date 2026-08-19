@@ -297,7 +297,7 @@ RSpec.describe 'request routing' do
     it 'keeps golden ids byte-identical on the wire' do
       stub = stub_request(:get, "#{TestHelpers::SANDBOX}/v3/status/job_01h8x9y2z3a4b5c6d7e8f9g0h1")
              .to_return(status: 200,
-                        body: JSON.generate(status: 'complete',
+                        body: JSON.generate(status: 'clear', message: 'Job completed',
                                             job_id: 'job_01h8x9y2z3a4b5c6d7e8f9g0h1'),
                         headers: { 'Content-Type' => 'application/json' })
 
@@ -341,7 +341,8 @@ RSpec.describe 'request routing' do
       stub_token(host: TestHelpers::PRODUCTION)
       stub = stub_request(:get, "#{TestHelpers::PRODUCTION}/v3/status/job_01h8x9y2z3a4b5c6d7e8f9g0h1")
              .to_return(status: 200,
-                        body: JSON.generate(status: 'complete', job_id: 'job_01h8x9y2z3a4b5c6d7e8f9g0h1'),
+                        body: JSON.generate(status: 'clear', message: 'Job completed',
+                                            job_id: 'job_01h8x9y2z3a4b5c6d7e8f9g0h1'),
                         headers: { 'Content-Type' => 'application/json' })
 
       override.verifications.retrieve('job_01h8x9y2z3a4b5c6d7e8f9g0h1')

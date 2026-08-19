@@ -6,10 +6,12 @@ require 'spec_helper'
 #
 # Reads SMILE_PARTNER_ID and SMILE_API_KEY from the environment and skips
 # cleanly when either is unset. Runs a real Enhanced KYC submission against the
-# sandbox, then polls with wait_until_complete. Credentials are never printed.
+# sandbox, then polls with wait_until_complete. Set SMILE_BASE_URL to point the
+# run at another host. Credentials are never printed.
 RSpec.describe 'sandbox Enhanced KYC end to end', :e2e do
   let(:partner_id) { ENV.fetch('SMILE_PARTNER_ID', nil) }
   let(:api_key) { ENV.fetch('SMILE_API_KEY', nil) }
+  let(:base_url) { ENV.fetch('SMILE_BASE_URL', nil) }
 
   before do
     skip 'SMILE_PARTNER_ID and SMILE_API_KEY are not set' if partner_id.nil? || api_key.nil?
@@ -20,15 +22,16 @@ RSpec.describe 'sandbox Enhanced KYC end to end', :e2e do
 
   it 'submits an Enhanced KYC job and observes it reach a terminal state' do
     client = SmileID::Client.new(
-      partner_id: partner_id, api_key: api_key, environment: :sandbox
+      partner_id: partner_id, api_key: api_key, environment: :sandbox, base_url: base_url
     )
 
     accepted = client.enhanced_kyc.verify(
       country: 'NG',
       id_type: 'NIN',
       id_number: '12345678901',
-      # The sandbox only accepts recognized test identities, matched on
-      # given_names + last_name + email.
+      # Non-production environments only accept recognized test identities,
+      # matched on given_names + last_name + email. Clearwater resolves to
+      # `clear`; an unrecognised identity resolves to `block`.
       user_details: { given_names: 'Amina Fatou', last_name: 'Clearwater',
                       email: 'amina.clearwater@example.com' },
       consent: SmileID::Consent.granted(
@@ -43,5 +46,6 @@ RSpec.describe 'sandbox Enhanced KYC end to end', :e2e do
 
     status = client.verifications.wait_until_complete(accepted.job_id, interval: 2, timeout: 120)
     expect(status.complete?).to be(true)
+    expect(status.status).to eq('clear')
   end
 end

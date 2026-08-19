@@ -18,7 +18,8 @@ RSpec.describe 'retry policy' do
 
   def complete_response
     { status: 200,
-      body: JSON.generate(status: 'complete', job_id: 'job_01h8x9y2z3a4b5c6d7e8f9g0h1'),
+      body: JSON.generate(status: 'clear', message: 'Job completed',
+                          job_id: 'job_01h8x9y2z3a4b5c6d7e8f9g0h1'),
       headers: { 'Content-Type' => 'application/json' } }
   end
 
@@ -183,6 +184,21 @@ RSpec.describe 'retry policy' do
       )
     end.to raise_error(SmileID::Errors::ConnectionError)
     expect(stub).to have_been_requested.once
+  end
+
+  # Faraday::SSLError is a sibling of ConnectionFailed, not a subclass, so a
+  # dropped TLS socket escapes unwrapped unless it is rescued by name.
+  it 'wraps a TLS failure as ConnectionError' do
+    stub_token
+    stub_request(:post, "#{TestHelpers::SANDBOX}/v3/enhanced_kyc")
+      .to_raise(Faraday::SSLError.new('SSL_connect returned=1 errno=0'))
+
+    expect do
+      client.enhanced_kyc.verify(
+        country: 'NG', id_type: 'NIN', id_number: '1',
+        user_details: valid_user_details, consent: valid_consent
+      )
+    end.to raise_error(SmileID::Errors::ConnectionError, /SSL_connect/)
   end
 
   it 'never retries replay, even though 409 is conflict-shaped' do

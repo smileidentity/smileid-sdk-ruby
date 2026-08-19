@@ -38,8 +38,10 @@ module SmileID
         end
       end
 
-      # Response from GET /v3/status (spec section 5.2, 6.8). The terminal
-      # sub-state (clear/block/attention/error) appears only in `message`.
+      # Response from GET /v3/status (spec section 5.2, 6.8). `status` is
+      # `processing` while the job runs, `not_found` for a job the API does not
+      # know, and otherwise the terminal decision itself: `clear`, `block`,
+      # `attention` or `error`. `message` carries no sub-state.
       class JobStatus
         attr_reader :status, :job_id, :user_id, :message, :raw
 
@@ -51,8 +53,12 @@ module SmileID
           @raw = raw
         end
 
+        # Terminal when the job is neither still running nor unknown — the
+        # status is then the decision (clear/block/attention/error).
         def complete?
-          status.to_s == 'complete'
+          return false if status.to_s.empty?
+
+          !processing? && !not_found?
         end
 
         def processing?

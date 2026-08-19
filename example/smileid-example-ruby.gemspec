@@ -11,5 +11,5 @@ Gem::Specification.new do |spec|
   spec.bindir = 'exe'
   spec.executables = ['smileid-example-ruby']
   spec.require_paths = ['lib']
-  spec.add_dependency 'smileid'
+  spec.add_dependency 'usesmileid'
 end

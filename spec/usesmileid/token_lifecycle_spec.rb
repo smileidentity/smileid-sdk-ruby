@@ -9,7 +9,7 @@ RSpec.describe 'token lifecycle' do
   def stub_status(job_id = 'job_01h8x9y2z3a4b5c6d7e8f9g0h1', **overrides)
     stub_request(:get, "#{TestHelpers::SANDBOX}/v3/status/#{job_id}")
       .to_return({ status: 200,
-                   body: JSON.generate(status: 'complete', job_id: job_id, message: 'done'),
+                   body: JSON.generate(status: 'clear', job_id: job_id, message: 'Job completed'),
                    headers: { 'Content-Type' => 'application/json' } }.merge(overrides))
   end
 
@@ -82,7 +82,8 @@ RSpec.describe 'token lifecycle' do
             headers: { 'Content-Type' => 'application/json' } }
         else
           { status: 200,
-            body: JSON.generate(status: 'complete', job_id: 'job_01h8x9y2z3a4b5c6d7e8f9g0h1'),
+            body: JSON.generate(status: 'clear', message: 'Job completed',
+                                job_id: 'job_01h8x9y2z3a4b5c6d7e8f9g0h1'),
             headers: { 'Content-Type' => 'application/json' } }
         end
       end
