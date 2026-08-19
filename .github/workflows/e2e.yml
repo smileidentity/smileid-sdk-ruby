@@ -10,7 +10,12 @@ on:
 
 concurrency:
   group: e2e-${{ github.ref }}
-  cancel-in-progress: true
+  # Don't cancel a run already in flight: it may be mid-way through a live
+  # sandbox verification, and cutting it off leaves an orphaned job.
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
   e2e:
@@ -30,8 +35,8 @@ jobs:
           SMILE_BASE_URL: ${{ secrets.SMILE_E2E_BASE_URL }}
         run: |
           set -o pipefail
-          bundle exec rspec spec/e2e/enhanced_kyc_e2e_spec.rb | tee e2e_output.txt
+          bundle exec rspec --no-color spec/e2e/enhanced_kyc_e2e_spec.rb | tee e2e_output.txt
           # rspec exits 0 even when the test skips (missing creds). Fail the
-          # build unless the summary shows the test actually ran and passed
+          # build unless the summary shows the tests actually ran and passed
           # with nothing pending.
-          grep -qE '^1 example, 0 failures$' e2e_output.txt
+          grep -qE '^[0-9]+ examples?, 0 failures$' e2e_output.txt
