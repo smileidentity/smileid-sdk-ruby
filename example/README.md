@@ -26,13 +26,13 @@ gem 'usesmileid', path: '..'
 ```bash
 export SMILE_PARTNER_ID="2"
 export SMILE_API_KEY="..."
-export SMILE_BASE_URL="https://devapi.smileidentity.com"   # optional host override
+export SMILE_BASE_URL="https://your-environment.example.com"   # optional host override
 export SMILE_CALLBACK_URL="https://your-app.example.com/smile-callback"
 ```
 
 Partner ids are displayed zero-padded (for example 002) but must be passed without leading zeros (2).
 
-`SMILE_BASE_URL` overrides the SDK environment URL. The SDK only names two environments, sandbox and production, so use it to reach any other host such as devapi.
+`SMILE_BASE_URL` overrides the SDK environment URL. The SDK only names two environments, sandbox and production, so use it to reach any other host.
 
 Optional:
 

@@ -57,7 +57,7 @@ Any other host needs an explicit `base_url:`, which wins over `environment`:
 smile = SmileID::Client.new(
   partner_id: "2",
   api_key: ENV.fetch("SMILE_API_KEY"),
-  base_url: "https://devapi.smileidentity.com"
+  base_url: "https://your-environment.example.com"
 )
 ```
 

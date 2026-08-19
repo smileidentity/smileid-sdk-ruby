@@ -182,7 +182,7 @@ module SmileIDExample
       Global flags can also be set with SMILE_PARTNER_ID, SMILE_API_KEY, SMILE_BASE_URL, SMILE_CALLBACK_URL and SMILE_TIMEOUT.
 
       Partner ids are displayed zero-padded (for example 002) but must be passed without leading zeros (2).
-      SMILE_BASE_URL or --base-url points the CLI at a host other than sandbox or production, for example https://devapi.smileidentity.com.
+      SMILE_BASE_URL or --base-url points the CLI at a host other than sandbox or production, for example https://your-environment.example.com.
       Non-production environments match test identities on given names + last name + email; an unrecognised identity resolves to block.
     USAGE
   end
