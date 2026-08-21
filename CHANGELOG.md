@@ -22,12 +22,18 @@ First public release.
 - Job status retrieval, plus a `wait_until_complete` helper that polls until
   a job reaches a terminal decision.
 - Callback replay.
+- User fraud reporting, with `flag_fraud` / `clear_fraud` convenience
+  wrappers.
 
 ### Client
 
 - Sandbox and production environments, with a `base_url` override for other
-  hosts.
+  hosts. `base_url` and callback URLs must be https, checked before any
+  request is sent.
+- Internal JWT authentication, cached and refreshed automatically on 401.
+- Automatic retries with backoff for idempotent calls.
 - Typed errors under `SmileID::Errors`, keyed on HTTP status.
+- Bank codes, supported ID types and supported documents lookups.
 
 [Unreleased]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v12.0.0...HEAD
 [12.0.0]: https://github.com/smileidentity/smileid-sdk-ruby/releases/tag/v12.0.0
