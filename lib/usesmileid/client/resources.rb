@@ -97,6 +97,9 @@ module SmileID
         unless id_type.to_s == 'PASSPORT'
           raise Errors::ValidationError.new('id_type must be PASSPORT for residency document verification')
         end
+        if visa.nil? || (visa.respond_to?(:empty?) && visa.empty?)
+          raise Errors::ValidationError.new('visa is required for residency document verification')
+        end
 
         form = document_form(
           selfie_image: selfie_image, liveness_images: liveness_images, document: document,
