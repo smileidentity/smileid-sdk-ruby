@@ -93,6 +93,7 @@ module SmileID
       def verify_residency(selfie_image:, liveness_images:, document:, visa:, consent:,
                            country:, user_details:, id_type: 'PASSPORT', document_back: nil,
                            callback_url: nil, partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
+        id_type = 'PASSPORT' if id_type.to_s.empty?
         unless id_type.to_s == 'PASSPORT'
           raise Errors::ValidationError.new('id_type must be PASSPORT for residency document verification')
         end
