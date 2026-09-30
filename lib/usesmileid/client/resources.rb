@@ -89,10 +89,10 @@ module SmileID
       end
 
       # POST /v3/residency_document_verification. The document is a passport
-      # and the visa endorsed in it is read as well, so id_type must be PASSPORT.
-      def verify_residency(id_type:, selfie_image:, liveness_images:, document:, visa:, consent:,
-                           country:, user_details:, document_back: nil, callback_url: nil,
-                           partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
+      # and the visa endorsed in it is read as well, so id_type defaults to, and must be, PASSPORT.
+      def verify_residency(selfie_image:, liveness_images:, document:, visa:, consent:,
+                           country:, user_details:, id_type: 'PASSPORT', document_back: nil,
+                           callback_url: nil, partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
         unless id_type.to_s == 'PASSPORT'
           raise Errors::ValidationError.new('id_type must be PASSPORT for residency document verification')
         end

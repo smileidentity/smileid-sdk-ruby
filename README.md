@@ -145,12 +145,12 @@ accepted = smile.documents.verify_enhanced(
 ### Residency document verification
 
 Same shape as enhanced document verification, plus the `visa` endorsed in the
-passport (JPEG or PNG). `id_type` must be `PASSPORT`. The visa details arrive in
+passport (JPEG or PNG). `id_type` is optional and defaults to `PASSPORT`, the
+only value accepted. The visa details arrive in
 `additional_documents` on the callback.
 
 ```ruby
 accepted = smile.documents.verify_residency(
-  id_type: "PASSPORT",
   selfie_image: "selfie.jpg",
   liveness_images: ["live1.jpg", "live2.jpg", "live3.jpg",
                     "live4.jpg", "live5.jpg", "live6.jpg"],

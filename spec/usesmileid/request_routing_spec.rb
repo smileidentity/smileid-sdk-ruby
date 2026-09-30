@@ -101,7 +101,7 @@ RSpec.describe 'request routing' do
   end
 
   describe 'documents.verify_residency' do
-    it 'posts the visa as a binary part with the Partner-ID header' do
+    it 'posts the visa as a binary part, defaulting id_type to PASSPORT' do
       captured = nil
       stub_request(:post, "#{TestHelpers::SANDBOX}/v3/residency_document_verification")
         .to_return do |request|
@@ -111,7 +111,7 @@ RSpec.describe 'request routing' do
         end
 
       client.documents.verify_residency(
-        id_type: 'PASSPORT', selfie_image: 's', liveness_images: %w[a b c d e f],
+        selfie_image: 's', liveness_images: %w[a b c d e f],
         document: 'd', visa: 'v', country: 'ZA', **entry_args
       )
 

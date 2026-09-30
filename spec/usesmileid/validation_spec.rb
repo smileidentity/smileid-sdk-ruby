@@ -150,7 +150,7 @@ RSpec.describe 'client-side validation' do
   end
 
   describe 'residency document verification id_type rule' do
-    it 'raises before sending unless id_type is PASSPORT' do
+    it 'raises before sending unless id_type is PASSPORT when given' do
       [nil, '', 'NATIONAL_ID'].each do |id_type|
         expect do
           client.documents.verify_residency(
