@@ -55,7 +55,8 @@ module SmileID
       end
     end
 
-    # POST /v3/document_verification and /v3/enhanced_document_verification
+    # POST /v3/document_verification, /v3/enhanced_document_verification and
+    # /v3/residency_document_verification
     class Documents < Base
       def verify(selfie_image:, liveness_images:, document:, consent:, country:, user_details:,
                  document_back: nil, id_type: nil, callback_url: nil,
@@ -85,6 +86,25 @@ module SmileID
         )
         accepted(@client.call(:enhanced_document_verification, form: form,
                                                                user_id_header: user_id, timeout: timeout))
+      end
+
+      # POST /v3/residency_document_verification. The document is a passport
+      # and the visa endorsed in it is read as well, so id_type must be PASSPORT.
+      def verify_residency(id_type:, selfie_image:, liveness_images:, document:, visa:, consent:,
+                           country:, user_details:, document_back: nil, callback_url: nil,
+                           partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
+        unless id_type.to_s == 'PASSPORT'
+          raise Errors::ValidationError.new('id_type must be PASSPORT for residency document verification')
+        end
+
+        form = document_form(
+          selfie_image: selfie_image, liveness_images: liveness_images, document: document,
+          document_back: document_back, consent: consent, country: country, id_type: id_type,
+          user_details: user_details, callback_url: callback_url,
+          partner_params: partner_params, metadata: metadata
+        ).merge('visa' => visa)
+        accepted(@client.call(:residency_document_verification, form: form,
+                                                                user_id_header: user_id, timeout: timeout))
       end
 
       private

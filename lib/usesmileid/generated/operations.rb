@@ -33,6 +33,11 @@ module SmileID
           partner_id_header: true, body_kind: :multipart, idempotent: false,
           success_statuses: [202]
         ),
+        residency_document_verification: Operation.new(
+          http_method: :post, path: '/v3/residency_document_verification', authenticated: true,
+          partner_id_header: true, body_kind: :multipart, idempotent: false,
+          success_statuses: [202]
+        ),
         biometric_kyc: Operation.new(
           http_method: :post, path: '/v3/biometric_kyc', authenticated: true,
           partner_id_header: true, body_kind: :multipart, idempotent: false,
