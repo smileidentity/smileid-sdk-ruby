@@ -100,6 +100,28 @@ RSpec.describe 'request routing' do
     end
   end
 
+  describe 'documents.verify_residency' do
+    it 'posts the visa as a binary part, defaulting id_type to PASSPORT' do
+      captured = nil
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/residency_document_verification")
+        .to_return do |request|
+          captured = request
+          { status: 202, body: accepted_body(status: 'accepted'),
+            headers: { 'Content-Type' => 'application/json' } }
+        end
+
+      client.documents.verify_residency(
+        selfie_image: 's', liveness_images: %w[a b c d e f],
+        document: 'd', visa: 'v', country: 'ZA', **entry_args
+      )
+
+      expect(captured.headers['Smileid-Partner-Id']).to eq('1234')
+      body = captured.body.dup.force_encoding('UTF-8')
+      expect(body).to match(%r{name="visa"; filename="visa\.jpg"\r\nContent-Type: image/jpeg})
+      expect(body).to include("name=\"id_type\"\r\n\r\nPASSPORT")
+    end
+  end
+
   describe 'biometric_kyc.verify (spec 6.4)' do
     it 'sends the Partner-ID header with id fields and images' do
       captured = nil

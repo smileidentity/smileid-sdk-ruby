@@ -21,7 +21,7 @@ module SmileID
       # Fields serialized as JSON parts.
       JSON_PART_FIELDS = %w[consent user_details partner_params metadata].freeze
       # Single binary fields.
-      BINARY_FIELDS = %w[selfie_image document document_back comparison_image].freeze
+      BINARY_FIELDS = %w[selfie_image document document_back visa comparison_image].freeze
       # Repeated binary fields.
       BINARY_ARRAY_FIELDS = %w[liveness_images].freeze
 
@@ -29,13 +29,14 @@ module SmileID
         'selfie_image' => 'image/jpeg',
         'document' => 'image/jpeg',
         'document_back' => 'image/jpeg',
+        'visa' => 'image/jpeg',
         'comparison_image' => 'image/jpeg',
         'liveness_images' => 'image/jpeg'
       }.freeze
 
-      # Only document and document_back may be PNG (spec section 5.3 rule 3);
+      # Only document, document_back and visa may be PNG (spec section 5.3 rule 3);
       # selfie, liveness and comparison images are always image/jpeg.
-      PNG_CAPABLE_FIELDS = %w[document document_back].freeze
+      PNG_CAPABLE_FIELDS = %w[document document_back visa].freeze
       PNG_MAGIC = "\x89PNG".b.freeze
 
       # RFC 6838 type/subtype tokens — anything else is rejected before send.
@@ -45,6 +46,7 @@ module SmileID
         'selfie_image' => 'selfie.jpg',
         'document' => 'document.jpg',
         'document_back' => 'document_back.jpg',
+        'visa' => 'visa.jpg',
         'comparison_image' => 'comparison.jpg'
       }.freeze
 

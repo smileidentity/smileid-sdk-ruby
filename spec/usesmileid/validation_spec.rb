@@ -149,6 +149,36 @@ RSpec.describe 'client-side validation' do
     end
   end
 
+  describe 'residency document verification id_type rule' do
+    it 'raises before sending when id_type is given and is not PASSPORT' do
+      %w[NATIONAL_ID passport].each do |id_type|
+        expect do
+          client.documents.verify_residency(
+            id_type: id_type, selfie_image: 's', liveness_images: %w[a b c d e f],
+            document: 'd', visa: 'v', country: 'ZA',
+            user_details: valid_user_details, consent: valid_consent
+          )
+        end.to raise_error(SmileID::Errors::ValidationError, /id_type must be PASSPORT/)
+      end
+      expect(WebMock).not_to have_requested(:any, //)
+    end
+  end
+
+  describe 'residency document verification visa rule' do
+    it 'raises before sending when visa is nil or empty' do
+      [nil, ''].each do |visa|
+        expect do
+          client.documents.verify_residency(
+            selfie_image: 's', liveness_images: %w[a b c d e f],
+            document: 'd', visa: visa, country: 'ZA',
+            user_details: valid_user_details, consent: valid_consent
+          )
+        end.to raise_error(SmileID::Errors::ValidationError, /visa is required/)
+      end
+      expect(WebMock).not_to have_requested(:any, //)
+    end
+  end
+
   describe 'authentication image rule (spec 6.6)' do
     it 'requires images unless use_enrolled_image is true' do
       expect do
