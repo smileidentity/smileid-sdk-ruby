@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [12.1.0] - 2026-10-01
+
 ### Added
 
 - Residency Document Verification: `documents.verify_residency`.
@@ -39,5 +41,6 @@ First public release.
 - Typed errors under `SmileID::Errors`, keyed on HTTP status.
 - Bank codes, supported ID types and supported documents lookups.
 
-[Unreleased]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v12.0.0...HEAD
+[Unreleased]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v12.1.0...HEAD
+[12.1.0]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v12.0.0...v12.1.0
 [12.0.0]: https://github.com/smileidentity/smileid-sdk-ruby/releases/tag/v12.0.0
