@@ -14,6 +14,8 @@ module SmileID
         :body_kind,       # :multipart / :json / nil
         :idempotent,      # safe to auto-retry? (GETs + token only)
         :success_statuses, # statuses treated as success (not raised)
+        :product,         # product claim bound into this request's token, if any
+        :token_user_id,   # where the token's user_id claim comes from: :header / :body / nil
         keyword_init: true
       )
 
@@ -21,42 +23,50 @@ module SmileID
         enhanced_kyc: Operation.new(
           http_method: :post, path: '/v3/enhanced_kyc', authenticated: true,
           partner_id_header: false, body_kind: :multipart, idempotent: false,
-          success_statuses: [202]
+          success_statuses: [202],
+          product: 'enhanced_kyc', token_user_id: :header
         ),
         document_verification: Operation.new(
           http_method: :post, path: '/v3/document_verification', authenticated: true,
           partner_id_header: true, body_kind: :multipart, idempotent: false,
-          success_statuses: [202]
+          success_statuses: [202],
+          product: 'document_verification', token_user_id: :header
         ),
         enhanced_document_verification: Operation.new(
           http_method: :post, path: '/v3/enhanced_document_verification', authenticated: true,
           partner_id_header: true, body_kind: :multipart, idempotent: false,
-          success_statuses: [202]
+          success_statuses: [202],
+          product: 'enhanced_document_verification', token_user_id: :header
         ),
         residency_document_verification: Operation.new(
           http_method: :post, path: '/v3/residency_document_verification', authenticated: true,
           partner_id_header: true, body_kind: :multipart, idempotent: false,
-          success_statuses: [202]
+          success_statuses: [202],
+          product: 'residency_document_verification', token_user_id: :header
         ),
         biometric_kyc: Operation.new(
           http_method: :post, path: '/v3/biometric_kyc', authenticated: true,
           partner_id_header: true, body_kind: :multipart, idempotent: false,
-          success_statuses: [202]
+          success_statuses: [202],
+          product: 'biometric_kyc', token_user_id: :header
         ),
         registration: Operation.new(
           http_method: :post, path: '/v3/registration', authenticated: true,
           partner_id_header: false, body_kind: :multipart, idempotent: false,
-          success_statuses: [202]
+          success_statuses: [202],
+          product: 'smart_selfie_registration', token_user_id: :header
         ),
         authentication: Operation.new(
           http_method: :post, path: '/v3/authentication', authenticated: true,
           partner_id_header: false, body_kind: :multipart, idempotent: false,
-          success_statuses: [202]
+          success_statuses: [202],
+          product: 'smart_selfie_authentication', token_user_id: :body
         ),
         compare: Operation.new(
           http_method: :post, path: '/v3/compare', authenticated: true,
           partner_id_header: false, body_kind: :multipart, idempotent: false,
-          success_statuses: [202]
+          success_statuses: [202],
+          product: 'smart_selfie_compare', token_user_id: :body
         ),
         status: Operation.new(
           http_method: :get, path: '/v3/status/{job_id}', authenticated: true,

@@ -18,7 +18,6 @@ module SmileID
         base_url: base_url, timeout: timeout, max_retries: max_retries, http_client: http_client
       )
       @transport = Transport.new(@config)
-      @token_manager = TokenManager.new(@config, @transport)
     end
 
     def enhanced_kyc
@@ -49,32 +48,25 @@ module SmileID
       @services ||= Resources::Services.new(self)
     end
 
-    # Execute an operation end to end: build the request, attach auth and
-    # telemetry, sign if configured, send it, refresh-on-401 once, and either
-    # return the response or raise a typed error (spec section 2A, 7).
+    # Execute an operation end to end: mint its token, build the request, attach
+    # auth and telemetry, send it, and either return the response or raise a
+    # typed error (spec section 2A, 7). Every authenticated call mints its own
+    # token; retries of an idempotent call reuse it.
     #
     # @return [SmileID::Response] on a success status for the operation.
-    def call(op_key, form: nil, path_params: {}, query: {}, user_id_header: nil, timeout: nil)
+    def call(op_key, form: nil, path_params: {}, query: {}, user_id_header: nil, timeout: nil,
+             use_enrolled_image: false)
       op = Generated::Operations.fetch(op_key)
       url = @config.base_url + interpolate(op.path, path_params)
       content_type, body = serialize(op, form)
-      refreshed = false
+      token = mint_token(op, form, user_id_header, use_enrolled_image) if op.authenticated
 
-      loop do
-        headers = build_headers(op, content_type, user_id_header)
-        response = @transport.send_request(
-          method: op.http_method, url: url, headers: headers, query: query || {},
-          body: body, retryable: op.idempotent, timeout: timeout
-        )
-
-        if response.status == 401 && op.authenticated && !refreshed
-          @token_manager.force_refresh
-          refreshed = true
-          next
-        end
-
-        return handle(op, response)
-      end
+      headers = build_headers(op, content_type, user_id_header, token)
+      response = @transport.send_request(
+        method: op.http_method, url: url, headers: headers, query: query || {},
+        body: body, retryable: op.idempotent, timeout: timeout
+      )
+      handle(op, response)
     end
 
     private
@@ -88,12 +80,55 @@ module SmileID
       Helpers::Multipart.build(form)
     end
 
-    def build_headers(op, content_type, user_id_header)
+    def build_headers(op, content_type, user_id_header, token)
       headers = Telemetry.headers
       headers['Content-Type'] = content_type if content_type
-      headers['SmileID-Token'] = @token_manager.token if op.authenticated
+      headers['SmileID-Token'] = token if token
       headers['SmileID-Partner-ID'] = @config.partner_id if op.partner_id_header
       headers['User-ID'] = user_id_header if user_id_header
+      headers
+    end
+
+    # The token is bound to this one request's user and product. A grant
+    # (use_enrolled_image) authorises a captureless job for one user, so it must
+    # never reach another call's token.
+    def mint_token(op, form, user_id_header, use_enrolled_image)
+      user_id = op.token_user_id == :header ? user_id_header : form && form['user_id']
+      claims = {
+        'user_id' => user_id,
+        'product' => op.product,
+        'use_enrolled_image' => (true if use_enrolled_image)
+      }.compact
+      content_type, body = Helpers::Multipart.build(claims) unless claims.empty?
+      response = @transport.send_request(
+        method: :post,
+        url: "#{@config.base_url}/v3/token",
+        headers: token_headers(content_type),
+        body: body,
+        retryable: true
+      )
+
+      unless response.status == 200
+        raise Errors.from_response(
+          status_code: response.status,
+          body: response.json,
+          raw_body: response.raw_body,
+          headers: response.headers
+        )
+      end
+
+      jwt = response.json && response.json['token']
+      raise Errors::AuthenticationError.new('token endpoint returned no token') if jwt.nil?
+
+      jwt
+    end
+
+    def token_headers(content_type)
+      headers = Telemetry.headers.merge(
+        'smileid-partner-id' => @config.partner_id,
+        'smileid-api-key' => @config.api_key
+      )
+      headers['Content-Type'] = content_type if content_type
       headers
     end
 
