@@ -29,6 +29,13 @@ module SmileID
         callback_url || @client.config.default_callback_url
       end
 
+      def require_images!(selfie_image, liveness_images, condition = nil)
+        return unless selfie_image.nil? || liveness_images.nil? || Array(liveness_images).empty?
+
+        message = ['selfie_image and liveness_images are required', condition].compact.join(' ')
+        raise Errors::ValidationError.new(message)
+      end
+
       def accepted(response)
         Generated::Models::AcceptedResponse.from(response.json)
       end
@@ -133,9 +140,24 @@ module SmileID
 
     # POST /v3/biometric_kyc
     class BiometricKyc < Base
-      def verify(selfie_image:, liveness_images:, consent:, country:, id_type:, id_number:,
-                 user_details:, callback_url: nil, sandbox_result: nil,
+      # With use_enrolled_image: true the job verifies against user_id's enrolled
+      # selfie, so the images may be omitted. The grant is bound into this job's
+      # token, never sent in the body.
+      def verify(consent:, country:, id_type:, id_number:, user_details:,
+                 selfie_image: nil, liveness_images: nil, use_enrolled_image: false,
+                 callback_url: nil, sandbox_result: nil,
                  partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
+        unless [true, false].include?(use_enrolled_image)
+          raise Errors::ValidationError.new('use_enrolled_image must be true or false')
+        end
+
+        if use_enrolled_image
+          if user_id.to_s.strip.empty?
+            raise Errors::ValidationError.new('user_id is required when use_enrolled_image is true')
+          end
+        else
+          require_images!(selfie_image, liveness_images, 'unless use_enrolled_image is true')
+        end
         form = {
           'country' => country,
           'id_type' => id_type,
@@ -149,7 +171,8 @@ module SmileID
           'partner_params' => partner_params,
           'metadata' => metadata
         }.compact
-        accepted(@client.call(:biometric_kyc, form: form, user_id_header: user_id, timeout: timeout))
+        accepted(@client.call(:biometric_kyc, form: form, user_id_header: user_id, timeout: timeout,
+                                              use_enrolled_image: use_enrolled_image))
       end
     end
 
@@ -173,17 +196,16 @@ module SmileID
       end
 
       # user_id goes in the BODY here (required), not the User-ID header.
-      def authenticate(user_id:, consent:, user_details:, selfie_image: nil, liveness_images: nil,
-                       use_enrolled_image: nil, callback_url: nil, sandbox_result: nil,
+      def authenticate(user_id:, consent:, user_details:, selfie_image:, liveness_images:,
+                       callback_url: nil, sandbox_result: nil,
                        partner_params: nil, metadata: nil, timeout: nil)
-        require_images!(use_enrolled_image, selfie_image, liveness_images)
+        require_images!(selfie_image, liveness_images)
         form = {
           'user_id' => user_id,
           'selfie_image' => selfie_image,
           'liveness_images' => liveness_images,
           'user_details' => coerce_user_details(user_details),
           'consent' => coerce_consent(consent),
-          'use_enrolled_image' => use_enrolled_image,
           'callback_url' => resolve_callback(callback_url),
           'sandbox_result' => sandbox_result,
           'partner_params' => partner_params,
@@ -211,17 +233,6 @@ module SmileID
           'metadata' => metadata
         }.compact
         accepted(@client.call(:compare, form: form, timeout: timeout))
-      end
-
-      private
-
-      def require_images!(use_enrolled_image, selfie_image, liveness_images)
-        return if use_enrolled_image == true
-        return unless selfie_image.nil? || liveness_images.nil? || Array(liveness_images).empty?
-
-        raise Errors::ValidationError.new(
-          'selfie_image and liveness_images are required unless use_enrolled_image is true'
-        )
       end
     end
 
