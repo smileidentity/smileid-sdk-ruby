@@ -147,8 +147,12 @@ module SmileID
                  selfie_image: nil, liveness_images: nil, use_enrolled_image: false,
                  callback_url: nil, sandbox_result: nil,
                  partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
+        unless [true, false].include?(use_enrolled_image)
+          raise Errors::ValidationError.new('use_enrolled_image must be true or false')
+        end
+
         if use_enrolled_image
-          if user_id.to_s.empty?
+          if user_id.to_s.strip.empty?
             raise Errors::ValidationError.new('user_id is required when use_enrolled_image is true')
           end
         else
@@ -192,7 +196,7 @@ module SmileID
       end
 
       # user_id goes in the BODY here (required), not the User-ID header.
-      def authenticate(user_id:, consent:, user_details:, selfie_image: nil, liveness_images: nil,
+      def authenticate(user_id:, consent:, user_details:, selfie_image:, liveness_images:,
                        callback_url: nil, sandbox_result: nil,
                        partner_params: nil, metadata: nil, timeout: nil)
         require_images!(selfie_image, liveness_images)

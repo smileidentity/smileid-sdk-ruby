@@ -180,10 +180,17 @@ RSpec.describe 'client-side validation' do
   end
 
   describe 'authentication image rule (spec 6.6)' do
-    it 'always requires selfie and liveness images' do
+    it 'requires the image keywords' do
       expect do
         client.biometric.authenticate(user_id: 'user-1', user_details: valid_user_details,
                                       consent: valid_consent)
+      end.to raise_error(ArgumentError, /selfie_image/)
+    end
+
+    it 'rejects explicitly nil images' do
+      expect do
+        client.biometric.authenticate(user_id: 'user-1', selfie_image: nil, liveness_images: nil,
+                                      user_details: valid_user_details, consent: valid_consent)
       end.to raise_error(SmileID::Errors::ValidationError, /selfie_image and liveness_images/)
       expect(WebMock).not_to have_requested(:any, //)
     end
@@ -191,6 +198,7 @@ RSpec.describe 'client-side validation' do
     it 'no longer accepts use_enrolled_image' do
       expect do
         client.biometric.authenticate(user_id: 'user-1', use_enrolled_image: true,
+                                      selfie_image: 's', liveness_images: %w[a b],
                                       user_details: valid_user_details, consent: valid_consent)
       end.to raise_error(ArgumentError, /use_enrolled_image/)
     end

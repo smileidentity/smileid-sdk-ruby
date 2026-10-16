@@ -40,7 +40,7 @@ smile = SmileID::Client.new(
 
 Partner ids are displayed zero-padded (for example 002) but must be passed without leading zeros (2).
 
-Authentication is internal: before each request the SDK fetches a short-lived token from the API, bound to that request's user and product. A 401 raises `AuthenticationError` without a retry. You never see or pass a token.
+Authentication is internal: before each request the SDK fetches a short-lived token from the API. A job's token is bound to that job's product and, when the job names one, its user; other calls get a token with neither. A 401 raises `AuthenticationError` without a retry. You never see or pass a token.
 
 ### Environment selection
 
