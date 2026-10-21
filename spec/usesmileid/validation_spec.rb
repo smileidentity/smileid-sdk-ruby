@@ -180,29 +180,46 @@ RSpec.describe 'client-side validation' do
   end
 
   describe 'authentication image rule (spec 6.6)' do
-    it 'requires images unless use_enrolled_image is true' do
+    it 'requires the image keywords' do
       expect do
         client.biometric.authenticate(user_id: 'user-1', user_details: valid_user_details,
                                       consent: valid_consent)
-      end.to raise_error(SmileID::Errors::ValidationError, /selfie_image and liveness_images/)
+      end.to raise_error(ArgumentError, /selfie_image/)
     end
 
-    it 'allows omitting images when use_enrolled_image is true' do
-      stub_token
-      captured = nil
-      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/authentication")
-        .to_return do |request|
-          captured = request
-          { status: 202, body: accepted_body, headers: { 'Content-Type' => 'application/json' } }
-        end
+    it 'rejects explicitly nil images' do
+      expect do
+        client.biometric.authenticate(user_id: 'user-1', selfie_image: nil, liveness_images: nil,
+                                      user_details: valid_user_details, consent: valid_consent)
+      end.to raise_error(SmileID::Errors::ValidationError, /selfie_image and liveness_images/)
+      expect(WebMock).not_to have_requested(:any, //)
+    end
 
-      client.biometric.authenticate(
-        user_id: 'user-1', use_enrolled_image: true,
-        user_details: valid_user_details, consent: valid_consent
-      )
-      body = captured.body.dup.force_encoding('UTF-8')
-      expect(body).to include("name=\"use_enrolled_image\"\r\n\r\ntrue")
-      expect(body).not_to include('selfie_image')
+    it 'no longer accepts use_enrolled_image' do
+      expect do
+        client.biometric.authenticate(user_id: 'user-1', use_enrolled_image: true,
+                                      selfie_image: 's', liveness_images: %w[a b],
+                                      user_details: valid_user_details, consent: valid_consent)
+      end.to raise_error(ArgumentError, /use_enrolled_image/)
+    end
+  end
+
+  describe 'biometric KYC enrolled image rule' do
+    let(:kyc) do
+      { country: 'NG', id_type: 'NIN', id_number: '12345678901',
+        user_details: valid_user_details, consent: valid_consent }
+    end
+
+    it 'requires images unless use_enrolled_image is true' do
+      expect { client.biometric_kyc.verify(**kyc) }
+        .to raise_error(SmileID::Errors::ValidationError, /selfie_image and liveness_images/)
+      expect(WebMock).not_to have_requested(:any, //)
+    end
+
+    it 'requires user_id when use_enrolled_image is true' do
+      expect { client.biometric_kyc.verify(use_enrolled_image: true, **kyc) }
+        .to raise_error(SmileID::Errors::ValidationError, /user_id/)
+      expect(WebMock).not_to have_requested(:any, //)
     end
   end
 
