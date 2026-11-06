@@ -8,12 +8,11 @@ The API surface — endpoints, request shapes, response shapes — comes from th
 
 ## Layout
 
-- `lib/smileid/generated/` will hold code produced by the generator. It's owned by the generation pipeline — don't hand-edit it, regenerate it instead.
-- `lib/smileid/client/` will hold hand-written client code that wraps the generated layer.
-- `lib/smileid/errors/` will hold hand-written error classes.
-- `lib/smileid/helpers/` will hold hand-written helper utilities.
-
-These directories don't exist yet in this scaffold. They'll be added as the SDK is built out.
+- `lib/usesmileid.rb` loads the `SmileID` module. The gem name and require path are both `usesmileid`.
+- `lib/usesmileid/generated/` holds wire models and the per-operation table. A generator will own it later, so put defaults and convenience logic in `lib/usesmileid/client/resources.rb`, not here.
+- `lib/usesmileid/client/` holds the hand-written client, config, token handling, transport and resource namespaces.
+- `lib/usesmileid/errors.rb` holds the `SmileID::Errors` hierarchy.
+- `lib/usesmileid/helpers/` holds the consent, multipart and user-details helpers.
 
 ## Running tests
 
@@ -23,6 +22,10 @@ Install dependencies and run the test suite with:
 bundle install
 bundle exec rspec
 ```
+
+CI runs `bundler-audit` as "Security Audit" on pull requests that touch `Gemfile`, `Gemfile.lock` or the gemspec, and daily on `main`. A failed daily run only shows as red: its issue step needs the `security-audit` and `priority:high` labels, which do not exist in this repo (as of October 2026), so it opens no issue. Run it locally with `bundle exec bundler-audit update && bundle exec bundler-audit check`. Fix a flagged transitive gem, such as `json`, with `bundle update <gem> --conservative`.
+
+The sandbox e2e spec skips unless `SMILE_PARTNER_ID` and `SMILE_API_KEY` are set. CI runs it on pushes to `main` and nightly, not on pull requests. If it skipped locally, say "not run against sandbox" in the pull request.
 
 ## Org-wide agent conventions
 
