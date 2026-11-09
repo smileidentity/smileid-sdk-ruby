@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
+require 'stringio'
+require 'tmpdir'
 require_relative '../../scripts/api_compat'
 
 RSpec.describe ApiCompat do
@@ -71,5 +73,55 @@ RSpec.describe ApiCompat do
     old_line = 'struct SmileID::Op: a, b'
     expect(breaks([old_line], ['struct SmileID::Op: a, b, c'])).to eq([])
     expect(breaks([old_line], ['struct SmileID::Op: b, a'])).not_to be_empty
+  end
+
+  describe '.run' do
+    let(:dir) { Dir.mktmpdir }
+    let(:release) { ['module SmileID', 'method SmileID::A#old()', 'method SmileID::A#keep(x)'] }
+    let(:base) { ['module SmileID', 'method SmileID::A#keep(x)'] }
+
+    after { FileUtils.remove_entry(dir) }
+
+    def snapshot(name, lines)
+      File.join(dir, name).tap { |path| File.write(path, "#{lines.join("\n")}\n") }
+    end
+
+    def run_compat(*snapshots, annotate: false)
+      out = StringIO.new
+      paths = snapshots.each_with_index.map { |lines, i| snapshot("s#{i}.txt", lines) }
+      [described_class.run(paths, out: out, annotate: annotate), out.string]
+    end
+
+    it 'passes with a warning when the break is already on the base branch' do
+      status, output = run_compat(release, base, base + ['method SmileID::A#added()'])
+
+      expect(status).to eq(0)
+      expect(output).to include('already on the base branch', 'warning: removed: method SmileID::A#old()',
+                                'No breaking changes to the public API in this pull request.')
+    end
+
+    it 'writes inherited breaks as GitHub warning annotations in CI' do
+      _, output = run_compat(release, base, base, annotate: true)
+      expect(output).to include('::warning title=Inherited API break::removed: method SmileID::A#old()')
+    end
+
+    it 'fails only on the break the pull request adds' do
+      status, output = run_compat(release, base, ['module SmileID', 'method SmileID::A#keep(x, y)'])
+
+      expect(status).to eq(1)
+      expect(output).to include('1 breaking change(s) to the public API in this pull request:',
+                                'required positional arguments went from 1 to 2')
+      expect(output.scan('removed: method SmileID::A#old()').size).to eq(1)
+    end
+
+    it 'compares two snapshots directly' do
+      expect(run_compat(release, base).first).to eq(1)
+      expect(run_compat(base, release).first).to eq(0)
+    end
+
+    it 'rejects a file that is not a snapshot, and the wrong number of files' do
+      expect { run_compat([], base) }.to raise_error(ArgumentError, /not an API snapshot/)
+      expect { run_compat(base) }.to raise_error(ArgumentError, /Usage/)
+    end
   end
 end

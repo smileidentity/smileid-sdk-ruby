@@ -1,13 +1,18 @@
 # frozen_string_literal: true
 
-# Compares two public API snapshots made by scripts/api_snapshot.rb and
-# reports anything in the old one that the new one removes or changes in a way
-# that could break a caller. Additions are allowed, including new optional
-# parameters on an existing method.
+# Compares public API snapshots made by scripts/api_snapshot.rb and reports
+# anything that is removed or changed in a way that could break a caller.
+# Additions are allowed, including new optional parameters on an existing
+# method.
 #
-# Usage: ruby scripts/api_compat.rb OLD_SNAPSHOT NEW_SNAPSHOT
+# Usage:
+#   ruby scripts/api_compat.rb OLD_SNAPSHOT NEW_SNAPSHOT
+#   ruby scripts/api_compat.rb RELEASE_SNAPSHOT BASE_SNAPSHOT HEAD_SNAPSHOT
 #
-# Exits 1 and prints one line per break if the new API is not compatible.
+# With two snapshots, exits 1 if NEW breaks OLD. With three, as in CI, only
+# breaks that HEAD (the pull request) adds to BASE (its base branch) fail.
+# Breaks already on BASE since RELEASE (the last stable tag) are printed as
+# warnings, because the next release deals with them, not this pull request.
 
 module ApiCompat
   METHOD_LINE = /\Amethod (?<name>.+?)\((?<params>.*)\)\z/
@@ -123,25 +128,56 @@ module ApiCompat
   def keywords(params)
     params.filter_map { |kind, key| [key, kind] if %i[key keyreq].include?(kind) }.to_h
   end
-end
 
-if $PROGRAM_NAME == __FILE__
-  old_path, new_path = ARGV
-  abort 'Usage: ruby scripts/api_compat.rb OLD_SNAPSHOT NEW_SNAPSHOT' unless old_path && new_path
+  USAGE = 'Usage: ruby scripts/api_compat.rb OLD NEW, or RELEASE BASE HEAD'
 
-  old_lines, new_lines = [old_path, new_path].map do |path|
+  # Command-line entry point. Returns the exit status.
+  def run(paths, out: $stdout, annotate: ENV.fetch('GITHUB_ACTIONS', nil) == 'true')
+    raise ArgumentError, USAGE unless [2, 3].include?(paths.size)
+
+    snapshots = paths.map { |path| read_snapshot(path) }
+    *earlier, base, head = snapshots
+    inherited = earlier.empty? ? [] : breaks(earlier.first, base)
+    introduced = breaks(base, head)
+
+    report_inherited(inherited, out, annotate)
+    report_introduced(introduced, out, earlier.empty?)
+    introduced.empty? ? 0 : 1
+  end
+
+  def read_snapshot(path)
     lines = File.readlines(path, chomp: true)
-    snapshot_ran = lines.any? { |line| line.start_with?('module SmileID') }
-    abort "#{path} is not an API snapshot; did the snapshot fail?" unless snapshot_ran
+    raise ArgumentError, "#{path} is not an API snapshot; did the snapshot fail?" \
+      unless lines.any? { |line| line.start_with?('module SmileID') }
+
     lines
   end
 
-  found = ApiCompat.breaks(old_lines, new_lines)
-  if found.empty?
-    puts 'No breaking changes to the public API.'
-  else
-    puts "#{found.size} breaking change(s) to the public API:"
-    found.each { |line| puts "  #{line}" }
-    exit 1
+  def report_inherited(inherited, out, annotate)
+    return if inherited.empty?
+
+    out.puts "#{inherited.size} breaking change(s) are already on the base branch since the last release. " \
+             'They do not fail this check; the next release must be a major version:'
+    inherited.each do |line|
+      out.puts(annotate ? "::warning title=Inherited API break::#{line}" : "  warning: #{line}")
+    end
+  end
+
+  def report_introduced(introduced, out, two_way)
+    scope = two_way ? '' : ' in this pull request'
+    if introduced.empty?
+      out.puts "No breaking changes to the public API#{scope}."
+    else
+      out.puts "#{introduced.size} breaking change(s) to the public API#{scope}:"
+      introduced.each { |line| out.puts "  #{line}" }
+    end
+  end
+end
+
+if $PROGRAM_NAME == __FILE__
+  begin
+    exit ApiCompat.run(ARGV)
+  rescue ArgumentError => e
+    abort e.message
   end
 end

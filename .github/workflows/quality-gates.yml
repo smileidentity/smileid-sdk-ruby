@@ -50,19 +50,24 @@ jobs:
             exit 0
           fi
 
+          # Snapshot the last release, the base branch and the PR. Only breaks
+          # that the PR adds to its base fail; breaks already on the base since
+          # the release are reported as warnings.
           git worktree add --detach "$RUNNER_TEMP/release" "$tag"
+          git worktree add --detach "$RUNNER_TEMP/base" "origin/$BASE_REF"
           bundle exec ruby scripts/api_snapshot.rb "$RUNNER_TEMP/release/lib" > "$RUNNER_TEMP/release-api.txt"
+          bundle exec ruby scripts/api_snapshot.rb "$RUNNER_TEMP/base/lib" > "$RUNNER_TEMP/base-api.txt"
           bundle exec ruby scripts/api_snapshot.rb lib > "$RUNNER_TEMP/head-api.txt"
 
-          echo "Comparing with $tag"
-          if ruby scripts/api_compat.rb "$RUNNER_TEMP/release-api.txt" "$RUNNER_TEMP/head-api.txt"; then
+          echo "Comparing with $tag and origin/$BASE_REF"
+          if ruby scripts/api_compat.rb "$RUNNER_TEMP/release-api.txt" "$RUNNER_TEMP/base-api.txt" "$RUNNER_TEMP/head-api.txt"; then
             exit 0
           fi
           if [ "$BREAKING_LABEL" = "true" ]; then
-            echo "::warning::The public API breaks compatibility with $tag. Allowed because this PR is labelled 'breaking'; the next release must be a major version."
+            echo "::warning::This PR breaks the public API. Allowed because it is labelled 'breaking'; the next release must be a major version."
             exit 0
           fi
-          echo "::error::The public API breaks compatibility with $tag. Keep the old API working, or label this PR 'breaking' if the break is intended."
+          echo "::error::This PR breaks the public API. Keep the old API working, or label this PR 'breaking' if the break is intended."
           exit 1
 
   coverage:
