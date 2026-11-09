@@ -89,6 +89,35 @@ RSpec.describe 'scripts/check-coverage-exclusions.sh' do
     expect(status.success?).to be(true)
   end
 
+  it 'does not treat an added line starting with "++ " as a new file header' do
+    stdout, _, status = commit_and_check('lib/a.rb' => "x = 1\n++ b/other.rb\n#{nocov}\n")
+
+    expect(status.exitstatus).to eq(1)
+    expect(stdout).to start_with('lib/a.rb:3: coverage exclusion')
+  end
+
+  it 'reports the right file and line across several files and hunks' do
+    write('lib/b.rb', "a\nb\nc\nd\ne\n")
+    git('add', '.')
+    git('commit', '-q', '-m', 'second file')
+    stdout, _, status = commit_and_check('lib/a.rb' => "x = 1\n#{nocov}\n",
+                                         'lib/b.rb' => "#{nocov}\na\nb\nc\nd\ne\n#{nocov}\n")
+
+    expect(status.exitstatus).to eq(1)
+    expect(stdout.lines.map { |line| line.split(': ').first })
+      .to eq(['lib/a.rb:2', 'lib/b.rb:1', 'lib/b.rb:7'])
+  end
+
+  it 'does not flag a lowercase @generated docblock' do
+    _, _, status = commit_and_check('src/x.js' => "/** @generated */\n")
+    expect(status.success?).to be(true)
+  end
+
+  it 'fails when the base ref does not exist' do
+    _, _, status = Open3.capture3('bash', script, 'no-such-ref', chdir: repo)
+    expect(status.success?).to be(false)
+  end
+
   it 'requires a base ref' do
     _, stderr, status = Open3.capture3('bash', script, chdir: repo)
     expect(status.exitstatus).to eq(2)

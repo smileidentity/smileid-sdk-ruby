@@ -41,10 +41,12 @@ jobs:
       - name: Compare the public API with the last release
         env:
           BREAKING_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'breaking') }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
-          tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*' HEAD 2>/dev/null || true)"
+          # The last stable release on the branch this PR merges into.
+          tag="$(scripts/previous-release-tag.sh "origin/$BASE_REF")"
           if [ -z "$tag" ]; then
-            echo "::notice::No v* release tag yet, so there is no released API to compare with."
+            echo "::notice::No stable v* release on $BASE_REF yet, so there is no released API to compare with."
             exit 0
           fi
 

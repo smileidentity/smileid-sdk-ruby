@@ -24,25 +24,46 @@ added_lines() {
     ':(exclude)scripts/check-coverage-exclusions.sh' \
     ':(exclude)spec/scripts/check_coverage_exclusions_spec.rb' |
     awk '
-      /^\+\+\+ / { file = substr($0, 7); next }
+      # A "+++ " line names the file only in the header, straight after the
+      # "--- " line. Inside a hunk it is an added line whose text starts
+      # with "++ ".
+      /^diff --git / { in_hunk = 0; after_minus = 0; next }
+      !in_hunk && /^--- / { after_minus = 1; next }
+      !in_hunk && after_minus && /^\+\+\+ / {
+        file = substr($0, 5)
+        sub(/^b\//, "", file)
+        after_minus = 0
+        next
+      }
       /^@@ / {
+        in_hunk = 1
+        after_minus = 0
         match($0, /\+[0-9]+/)
         line = substr($0, RSTART + 1, RLENGTH - 1)
         next
       }
-      /^\+/ { print file "\t" line "\t" substr($0, 2); line++ }
+      in_hunk && /^\+/ { print file "\t" line "\t" substr($0, 2); line++ }
     '
 }
 
+# Collect the lines first, so that a git failure (for example, an unknown
+# base ref) fails the script instead of reporting no exclusions.
+lines="$(added_lines)"
+
+generated_re='@Generated([^[:alnum:]_]|$)'
+generated_dir_re='(^|/)[Gg]enerated/'
+build_file_re='(^|/)(pom\.xml|build\.gradle(\.kts)?)$'
+excludes_re='<[Ee]xcludes?>|[Ee]xcludes?[[:space:]]*[(=+]'
+
 hits=0
 while IFS=$'\t' read -r file line text; do
+  [ -n "$file" ] || continue
   reason=""
-  if printf '%s\n' "$text" | grep -Eq "$markers"; then
+  if [[ $text =~ $markers ]]; then
     reason="coverage exclusion"
-  elif printf '%s\n' "$text" | grep -Eq '@Generated\b' && ! printf '%s\n' "$file" | grep -Eqi '(^|/)generated/'; then
+  elif [[ $text =~ $generated_re ]] && ! [[ $file =~ $generated_dir_re ]]; then
     reason="@Generated outside generated code"
-  elif printf '%s\n' "$file" | grep -Eq '(^|/)(pom\.xml|build\.gradle(\.kts)?)$' &&
-    printf '%s\n' "$text" | grep -Eqi '<excludes?>|excludes?[[:space:]]*[(=+]' &&
+  elif [[ $file =~ $build_file_re ]] && [[ $text =~ $excludes_re ]] &&
     [ -f "$file" ] && grep -qi jacoco "$file"; then
     reason="JaCoCo exclusion"
   fi
@@ -51,7 +72,7 @@ while IFS=$'\t' read -r file line text; do
     printf '%s:%s: %s: %s\n' "$file" "$line" "$reason" "$text"
     hits=$((hits + 1))
   fi
-done < <(added_lines)
+done <<<"$lines"
 
 if [ "$hits" -gt 0 ]; then
   echo "Found $hits coverage exclusion(s) added since ${base_ref}. Add tests instead of excluding code." >&2

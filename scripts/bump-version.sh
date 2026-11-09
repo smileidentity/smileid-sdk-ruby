@@ -29,9 +29,9 @@ version_line="^  VERSION = '[0-9]+\.[0-9]+\.[0-9]+'$"
 
 [ -f "$version_file" ] || fail "$version_file not found"
 [ -f "$changelog" ] || fail "$changelog not found"
-[ "$(grep -Ec "$version_line" "$version_file")" -eq 1 ] ||
+[ "$({ grep -Ec "$version_line" "$version_file" || true; })" -eq 1 ] ||
   fail "$version_file must have exactly one line like: VERSION = '1.2.3'"
-[ "$(grep -c '^## \[Unreleased\]$' "$changelog")" -eq 1 ] ||
+[ "$({ grep -c '^## \[Unreleased\]$' "$changelog" || true; })" -eq 1 ] ||
   fail "$changelog must have exactly one '## [Unreleased]' heading"
 
 current="$(grep -E "$version_line" "$version_file" | sed -E "s/.*'(.*)'.*/\1/")"

@@ -48,39 +48,50 @@ jobs:
             exit 1
           fi
 
-      # A PR labelled `breaking` merged since the previous release needs a
-      # major version, and a major version needs at least one such PR.
+      # A release that contains a PR labelled `breaking` (merged after the
+      # previous stable tag and before this one) needs a major version, and
+      # a major version needs at least one such PR, except 0.x to 1.0.0.
       - name: Verify the major version matches breaking PRs
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          PREVIOUS_TAG="$(git describe --tags --abbrev=0 --match 'v[0-9]*' "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          set -euo pipefail
+          TAG="$GITHUB_REF_NAME"
+          PREVIOUS_TAG="$(scripts/previous-release-tag.sh "${TAG}^")"
           if [ -z "$PREVIOUS_TAG" ]; then
-            echo "::notice::No release before $GITHUB_REF_NAME, so there is nothing to compare with."
+            echo "::notice::No stable release before $TAG, so there is nothing to compare with."
             exit 0
           fi
 
-          SINCE="$(TZ=UTC git log -1 --date=format-local:%Y-%m-%dT%H:%M:%SZ --format=%cd "$PREVIOUS_TAG")"
+          # A PR is in this release when its merge commit is reachable from
+          # the tag but not from the previous release tag.
+          # Read the list first, so that a gh failure fails the step.
+          CANDIDATES="$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged --label breaking \
+            --limit 1000 --json number,mergeCommit \
+            --jq '.[] | "\(.number) \(.mergeCommit.oid // "")"')"
           BREAKING_PRS=""
           while read -r number sha; do
-            # Only count PRs whose merge is part of this release.
-            if [ -n "$sha" ] && git merge-base --is-ancestor "$sha" "$GITHUB_SHA" 2>/dev/null; then
+            if [ -n "$sha" ] &&
+              git merge-base --is-ancestor "$sha" "$TAG" 2>/dev/null &&
+              ! git merge-base --is-ancestor "$sha" "$PREVIOUS_TAG" 2>/dev/null; then
               BREAKING_PRS="$BREAKING_PRS #$number"
             fi
-          done < <(gh pr list --repo "$GITHUB_REPOSITORY" --state merged --base main --label breaking \
-            --search "merged:>=$SINCE" --limit 200 --json number,mergeCommit \
-            --jq '.[] | "\(.number) \(.mergeCommit.oid // "")"')
+          done <<< "$CANDIDATES"
 
-          PREVIOUS_MAJOR="$(echo "${PREVIOUS_TAG#v}" | cut -d. -f1)"
-          TAG_MAJOR="$(echo "${GITHUB_REF_NAME#v}" | cut -d. -f1)"
-          echo "Previous release $PREVIOUS_TAG; breaking PRs since then:${BREAKING_PRS:- none}"
+          PREVIOUS_MAJOR="${PREVIOUS_TAG#v}"
+          PREVIOUS_MAJOR="${PREVIOUS_MAJOR%%.*}"
+          TAG_MAJOR="${TAG#v}"
+          TAG_MAJOR="${TAG_MAJOR%%.*}"
+          echo "Previous release $PREVIOUS_TAG; breaking PRs in $PREVIOUS_TAG..$TAG:${BREAKING_PRS:- none}"
 
           if [ -n "$BREAKING_PRS" ] && [ "$TAG_MAJOR" -le "$PREVIOUS_MAJOR" ]; then
-            echo "::error::PRs labelled 'breaking' were merged since $PREVIOUS_TAG ($BREAKING_PRS ), so $GITHUB_REF_NAME must be a major version."
+            echo "::error::PRs labelled 'breaking' are in this release ($BREAKING_PRS ), so $TAG must be a major version."
             exit 1
           fi
-          if [ -z "$BREAKING_PRS" ] && [ "$TAG_MAJOR" -gt "$PREVIOUS_MAJOR" ]; then
-            echo "::error::$GITHUB_REF_NAME is a major version, but no PR labelled 'breaking' was merged since $PREVIOUS_TAG."
+          # 0.x to 1.0.0 marks a stable API, not a break, so it needs no breaking PR.
+          if [ -z "$BREAKING_PRS" ] && [ "$TAG_MAJOR" -gt "$PREVIOUS_MAJOR" ] &&
+            ! { [ "$PREVIOUS_MAJOR" -eq 0 ] && [ "$TAG_MAJOR" -eq 1 ]; }; then
+            echo "::error::$TAG is a major version, but no PR labelled 'breaking' is in $PREVIOUS_TAG..$TAG."
             exit 1
           fi
 
