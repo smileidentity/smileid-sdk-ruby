@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [12.2.0] - 2026-10-08
+## [13.0.0] - 2026-11-09
+
+Version 12.2.0 was never published. Its changes are in this release, which is a major version because it breaks the 12.1.0 API.
+
+### Breaking changes
+
+- `biometric.authenticate` no longer takes `use_enrolled_image:`. Use `biometric_kyc.verify(use_enrolled_image: true, user_id: ...)` instead.
+- `biometric.authenticate` now requires `selfie_image:` and `liveness_images:`. Pass both on every call.
+- `SmileID::TokenManager` has been removed. The client now mints a token for each request, so you do not need to manage tokens.
 
 ### Changed
 
@@ -57,7 +65,7 @@ First public release.
 - Typed errors under `SmileID::Errors`, keyed on HTTP status.
 - Bank codes, supported ID types and supported documents lookups.
 
-[Unreleased]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v12.2.0...HEAD
-[12.2.0]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v12.1.0...v12.2.0
+[Unreleased]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v13.0.0...HEAD
+[13.0.0]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v12.1.0...v13.0.0
 [12.1.0]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v12.0.0...v12.1.0
 [12.0.0]: https://github.com/smileidentity/smileid-sdk-ruby/releases/tag/v12.0.0
