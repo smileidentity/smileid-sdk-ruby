@@ -69,6 +69,21 @@ RSpec.describe ApiCompat do
       .to include('no longer accepts arbitrary keywords')
   end
 
+  it 'reports a keyword method that now takes **nil (no keywords)' do
+    result = breaks(['method SmileID::A#b(x, timeout: ?)'], ['method SmileID::A#b(x, **nil)'])
+    expect(result.join).to include('keyword timeout: removed')
+  end
+
+  it 'reports **options that became **nil' do
+    result = breaks(['method SmileID::A#b(**opts)'], ['method SmileID::A#b(**nil)'])
+    expect(result.join).to include('no longer accepts arbitrary keywords')
+  end
+
+  it 'allows **nil to become keywords or **options' do
+    expect(breaks(['method SmileID::A#b(**nil)'], ['method SmileID::A#b(timeout: ?)'])).to eq([])
+    expect(breaks(['method SmileID::A#b(**nil)'], ['method SmileID::A#b(**opts)'])).to eq([])
+  end
+
   it 'allows new struct members at the end only' do
     old_line = 'struct SmileID::Op: a, b'
     expect(breaks([old_line], ['struct SmileID::Op: a, b, c'])).to eq([])

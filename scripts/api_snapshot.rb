@@ -70,7 +70,9 @@ module ApiSnapshot
       "method #{name}.#{meth}(#{signature(mod.method(meth).parameters)})"
     end
 
-    if mod.is_a?(Class) && mod.private_method_defined?(:initialize, false)
+    # Record the effective constructor of every class, including one it
+    # inherits, so a change to an inherited initialize shows up here too.
+    if mod.is_a?(Class) && !mod.singleton_class.public_method_defined?(:new, false)
       lines << "method #{name}.new(#{signature(mod.instance_method(:initialize).parameters)})"
     end
 

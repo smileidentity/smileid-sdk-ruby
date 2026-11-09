@@ -61,6 +61,8 @@ module ApiCompat
     text.split(', ').map do |param|
       case param
       when /\A&/ then [:block, param[1..]]
+      # `**nil` means the method accepts no keywords at all, not **options.
+      when '**nil' then [:nokey, nil]
       when /\A\*\*/ then [:keyrest, param[2..]]
       when /\A\*/ then [:rest, param[1..]]
       when /\A(.+): \?\z/ then [:key, Regexp.last_match(1)]
