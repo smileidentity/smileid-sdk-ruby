@@ -1,0 +1,229 @@
+class SmileID::Client < Object
+class SmileID::Config < Object
+class SmileID::Consent < Object
+class SmileID::Errors::APIError < SmileID::Errors::SmileIDError
+class SmileID::Errors::AuthenticationError < SmileID::Errors::SmileIDError
+class SmileID::Errors::ConflictError < SmileID::Errors::SmileIDError
+class SmileID::Errors::ConnectionError < SmileID::Errors::SmileIDError
+class SmileID::Errors::InvalidRequestError < SmileID::Errors::SmileIDError
+class SmileID::Errors::NotFoundError < SmileID::Errors::SmileIDError
+class SmileID::Errors::PayloadTooLargeError < SmileID::Errors::SmileIDError
+class SmileID::Errors::PaymentRequiredError < SmileID::Errors::SmileIDError
+class SmileID::Errors::PermissionError < SmileID::Errors::SmileIDError
+class SmileID::Errors::RateLimitError < SmileID::Errors::SmileIDError
+class SmileID::Errors::SmileIDError < StandardError
+class SmileID::Errors::TimeoutError < SmileID::Errors::SmileIDError
+class SmileID::Errors::UnexpectedResponseError < SmileID::Errors::SmileIDError
+class SmileID::Errors::ValidationError < SmileID::Errors::InvalidRequestError
+class SmileID::Generated::Models::AcceptedResponse < Object
+class SmileID::Generated::Models::AcceptedStatusResponse < Object
+class SmileID::Generated::Models::BankCodesResponse < Object
+class SmileID::Generated::Models::IdStatusResponse < Object
+class SmileID::Generated::Models::JobStatus < Object
+class SmileID::Generated::Models::SupportedDocumentsResponse < Object
+class SmileID::Generated::Models::SupportedIdTypesResponse < Object
+class SmileID::Generated::Operations::Operation < Struct
+class SmileID::Resources::Base < Object
+class SmileID::Resources::Biometric < SmileID::Resources::Base
+class SmileID::Resources::BiometricKyc < SmileID::Resources::Base
+class SmileID::Resources::Documents < SmileID::Resources::Base
+class SmileID::Resources::EnhancedKyc < SmileID::Resources::Base
+class SmileID::Resources::Services < SmileID::Resources::Base
+class SmileID::Resources::Users < SmileID::Resources::Base
+class SmileID::Resources::Verifications < SmileID::Resources::Base
+class SmileID::Response < Object
+class SmileID::Transport < Object
+class SmileID::UserDetails < Object
+constant SmileID::Client::PRODUCT_BY_PATH: Hash
+constant SmileID::Config::BASE_URLS: Hash
+constant SmileID::Config::DEFAULT_MAX_RETRIES: Integer
+constant SmileID::Config::DEFAULT_TIMEOUT: Integer
+constant SmileID::Config::PARTNER_ID: Regexp
+constant SmileID::Consent::NOTICE_LANGUAGE: Regexp
+constant SmileID::Errors::REQUEST_ID_HEADERS: Array
+constant SmileID::Errors::STATUS_CLASSES: Hash
+constant SmileID::Generated::Operations::OPS: Hash
+constant SmileID::Helpers::Multipart::BINARY_ARRAY_FIELDS: Array
+constant SmileID::Helpers::Multipart::BINARY_FIELDS: Array
+constant SmileID::Helpers::Multipart::CRLF: String
+constant SmileID::Helpers::Multipart::DEFAULT_CONTENT_TYPES: Hash
+constant SmileID::Helpers::Multipart::DEFAULT_FILENAMES: Hash
+constant SmileID::Helpers::Multipart::JSON_PART_FIELDS: Array
+constant SmileID::Helpers::Multipart::MEDIA_TYPE: Regexp
+constant SmileID::Helpers::Multipart::PNG_CAPABLE_FIELDS: Array
+constant SmileID::Helpers::Multipart::PNG_MAGIC: String
+constant SmileID::Resources::Users::REASONS: Array
+constant SmileID::Telemetry::SDK_NAME: String
+constant SmileID::Transport::BACKOFF_BASE: Float
+constant SmileID::Transport::RETRY_AFTER_CAP: Integer
+constant SmileID::Transport::RETRY_STATUSES: Array
+constant SmileID::UserDetails::PHONE_NUMBER: Regexp
+constant SmileID::VERSION: String
+method SmileID::Client#biometric()
+method SmileID::Client#biometric_kyc()
+method SmileID::Client#call(op_key, form: ?, path_params: ?, query: ?, user_id_header: ?, timeout: ?, use_enrolled_image: ?)
+method SmileID::Client#config()
+method SmileID::Client#documents()
+method SmileID::Client#enhanced_kyc()
+method SmileID::Client#services()
+method SmileID::Client#users()
+method SmileID::Client#verifications()
+method SmileID::Client.new(partner_id:, api_key:, environment: ?, default_callback_url: ?, base_url: ?, timeout: ?, max_retries: ?, http_client: ?)
+method SmileID::Config#api_key()
+method SmileID::Config#base_url()
+method SmileID::Config#default_callback_url()
+method SmileID::Config#environment()
+method SmileID::Config#http_client()
+method SmileID::Config#max_retries()
+method SmileID::Config#partner_id()
+method SmileID::Config#timeout()
+method SmileID::Config.new(partner_id:, api_key:, environment: ?, default_callback_url: ?, base_url: ?, timeout: ?, max_retries: ?, http_client: ?)
+method SmileID::Config.validate_callback_url!(value, field: ?)
+method SmileID::Consent#format_time(value)
+method SmileID::Consent#granted()
+method SmileID::Consent#granted_at()
+method SmileID::Consent#notice_language()
+method SmileID::Consent#notice_privacy_policy_url()
+method SmileID::Consent#to_h()
+method SmileID::Consent#validate!()
+method SmileID::Consent.coerce(input)
+method SmileID::Consent.from_hash(hash)
+method SmileID::Consent.granted(granted_at:, notice_language:, notice_privacy_policy_url:)
+method SmileID::Consent.new(granted:, granted_at:, notice_language:, notice_privacy_policy_url:)
+method SmileID::Consent.stringify(hash)
+method SmileID::Errors.class_for(status_code)
+method SmileID::Errors.from_response(status_code:, body:, raw_body:, headers: ?)
+method SmileID::Errors.request_id_from(headers)
+method SmileID::Errors::SmileIDError#code()
+method SmileID::Errors::SmileIDError#raw_body()
+method SmileID::Errors::SmileIDError#request_id()
+method SmileID::Errors::SmileIDError#status()
+method SmileID::Errors::SmileIDError#status_code()
+method SmileID::Errors::SmileIDError.new(message = ?, status_code: ?, status: ?, code: ?, request_id: ?, raw_body: ?)
+method SmileID::Generated::Models::AcceptedResponse#accepted?()
+method SmileID::Generated::Models::AcceptedResponse#created_at()
+method SmileID::Generated::Models::AcceptedResponse#job_id()
+method SmileID::Generated::Models::AcceptedResponse#message()
+method SmileID::Generated::Models::AcceptedResponse#raw()
+method SmileID::Generated::Models::AcceptedResponse#status()
+method SmileID::Generated::Models::AcceptedResponse#user_id()
+method SmileID::Generated::Models::AcceptedResponse.from(hash)
+method SmileID::Generated::Models::AcceptedResponse.new(status:, message: ?, job_id: ?, user_id: ?, created_at: ?, raw: ?)
+method SmileID::Generated::Models::AcceptedStatusResponse#accepted?()
+method SmileID::Generated::Models::AcceptedStatusResponse#job_id()
+method SmileID::Generated::Models::AcceptedStatusResponse#message()
+method SmileID::Generated::Models::AcceptedStatusResponse#raw()
+method SmileID::Generated::Models::AcceptedStatusResponse#status()
+method SmileID::Generated::Models::AcceptedStatusResponse#user_id()
+method SmileID::Generated::Models::AcceptedStatusResponse.from(hash)
+method SmileID::Generated::Models::AcceptedStatusResponse.new(status:, message: ?, job_id: ?, user_id: ?, raw: ?)
+method SmileID::Generated::Models::BankCodesResponse#bank_codes()
+method SmileID::Generated::Models::BankCodesResponse#raw()
+method SmileID::Generated::Models::BankCodesResponse.from(hash)
+method SmileID::Generated::Models::BankCodesResponse.new(bank_codes:, raw: ?)
+method SmileID::Generated::Models::IdStatusResponse#last_check_status()
+method SmileID::Generated::Models::IdStatusResponse#last_check_success_rate()
+method SmileID::Generated::Models::IdStatusResponse#last_checked()
+method SmileID::Generated::Models::IdStatusResponse#last_hour_success_rate()
+method SmileID::Generated::Models::IdStatusResponse#last_known_status()
+method SmileID::Generated::Models::IdStatusResponse#raw()
+method SmileID::Generated::Models::IdStatusResponse.from(hash)
+method SmileID::Generated::Models::IdStatusResponse.new(hash)
+method SmileID::Generated::Models::JobStatus#complete?()
+method SmileID::Generated::Models::JobStatus#job_id()
+method SmileID::Generated::Models::JobStatus#message()
+method SmileID::Generated::Models::JobStatus#not_found?()
+method SmileID::Generated::Models::JobStatus#processing?()
+method SmileID::Generated::Models::JobStatus#raw()
+method SmileID::Generated::Models::JobStatus#status()
+method SmileID::Generated::Models::JobStatus#user_id()
+method SmileID::Generated::Models::JobStatus.from(hash)
+method SmileID::Generated::Models::JobStatus.new(status:, job_id: ?, user_id: ?, message: ?, raw: ?)
+method SmileID::Generated::Models::SupportedDocumentsResponse#raw()
+method SmileID::Generated::Models::SupportedDocumentsResponse#valid_documents()
+method SmileID::Generated::Models::SupportedDocumentsResponse.from(hash)
+method SmileID::Generated::Models::SupportedDocumentsResponse.new(valid_documents:, raw: ?)
+method SmileID::Generated::Models::SupportedIdTypesResponse#id_types()
+method SmileID::Generated::Models::SupportedIdTypesResponse#raw()
+method SmileID::Generated::Models::SupportedIdTypesResponse.from(hash)
+method SmileID::Generated::Models::SupportedIdTypesResponse.new(id_types:, raw: ?)
+method SmileID::Generated::Operations.fetch(name)
+method SmileID::Generated::Operations::Operation#authenticated()
+method SmileID::Generated::Operations::Operation#authenticated=(_)
+method SmileID::Generated::Operations::Operation#body_kind()
+method SmileID::Generated::Operations::Operation#body_kind=(_)
+method SmileID::Generated::Operations::Operation#http_method()
+method SmileID::Generated::Operations::Operation#http_method=(_)
+method SmileID::Generated::Operations::Operation#idempotent()
+method SmileID::Generated::Operations::Operation#idempotent=(_)
+method SmileID::Generated::Operations::Operation#partner_id_header()
+method SmileID::Generated::Operations::Operation#partner_id_header=(_)
+method SmileID::Generated::Operations::Operation#path()
+method SmileID::Generated::Operations::Operation#path=(_)
+method SmileID::Generated::Operations::Operation#success_statuses()
+method SmileID::Generated::Operations::Operation#success_statuses=(_)
+method SmileID::Helpers::Multipart.append_field(body, field, value, boundary)
+method SmileID::Helpers::Multipart.binary_part(name, input, boundary, index: ?)
+method SmileID::Helpers::Multipart.build(form, boundary: ?)
+method SmileID::Helpers::Multipart.coerce_binary(field, input, index: ?)
+method SmileID::Helpers::Multipart.default_boundary()
+method SmileID::Helpers::Multipart.filename_for(field, index)
+method SmileID::Helpers::Multipart.from_file_part(part, default_fn)
+method SmileID::Helpers::Multipart.from_hash(hash, default_fn)
+method SmileID::Helpers::Multipart.from_io(io, default_fn)
+method SmileID::Helpers::Multipart.from_string(str, default_fn)
+method SmileID::Helpers::Multipart.json_part(name, value, boundary)
+method SmileID::Helpers::Multipart.plausible_path?(str)
+method SmileID::Helpers::Multipart.png?(upload)
+method SmileID::Helpers::Multipart.read_all(io)
+method SmileID::Helpers::Multipart.resolve_content_type(field, upload)
+method SmileID::Helpers::Multipart.sanitize_filename(filename)
+method SmileID::Helpers::Multipart.scalar_string(value)
+method SmileID::Helpers::Multipart.text_part(name, value, boundary)
+method SmileID::Helpers::Multipart.validate_content_type!(content_type)
+method SmileID::Resources::Base.new(client)
+method SmileID::Resources::Biometric#authenticate(user_id:, consent:, user_details:, selfie_image:, liveness_images:, callback_url: ?, sandbox_result: ?, partner_params: ?, metadata: ?, timeout: ?)
+method SmileID::Resources::Biometric#compare(selfie_image:, comparison_image:, comparison_image_type:, consent:, user_details:, liveness_images: ?, allow_new_enroll: ?, user_id: ?, callback_url: ?, sandbox_result: ?, partner_params: ?, metadata: ?, timeout: ?)
+method SmileID::Resources::Biometric#enroll(selfie_image:, liveness_images:, consent:, user_details:, allow_new_enroll: ?, callback_url: ?, sandbox_result: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
+method SmileID::Resources::BiometricKyc#verify(consent:, country:, id_type:, id_number:, user_details:, selfie_image: ?, liveness_images: ?, use_enrolled_image: ?, callback_url: ?, sandbox_result: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
+method SmileID::Resources::Documents#verify(selfie_image:, liveness_images:, document:, consent:, country:, user_details:, document_back: ?, id_type: ?, callback_url: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
+method SmileID::Resources::Documents#verify_enhanced(id_type:, selfie_image:, liveness_images:, document:, consent:, country:, user_details:, document_back: ?, callback_url: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
+method SmileID::Resources::Documents#verify_residency(selfie_image:, liveness_images:, document:, visa:, consent:, country:, user_details:, id_type: ?, document_back: ?, callback_url: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
+method SmileID::Resources::EnhancedKyc#verify(country:, id_type:, id_number:, user_details:, consent:, callback_url: ?, bank_code: ?, operator: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
+method SmileID::Resources::Services#bank_codes(country: ?, timeout: ?)
+method SmileID::Resources::Services#id_status(country:, id_type:, timeout: ?)
+method SmileID::Resources::Services#supported_documents(continent: ?, country_code: ?, locale: ?, timeout: ?)
+method SmileID::Resources::Services#supported_id_types(country: ?, timeout: ?)
+method SmileID::Resources::Users#clear_fraud(user_id, notes:, reported_by:, timeout: ?)
+method SmileID::Resources::Users#flag_fraud(user_id, reason:, reported_by:, notes: ?, timeout: ?)
+method SmileID::Resources::Users#report_fraud(user_id, is_fraud:, reported_by:, reason: ?, notes: ?, timeout: ?)
+method SmileID::Resources::Verifications#replay(job_id, callback_url: ?, timeout: ?)
+method SmileID::Resources::Verifications#retrieve(job_id, timeout: ?)
+method SmileID::Resources::Verifications#wait_until_complete(job_id, interval: ?, timeout: ?, treat_not_found_as_pending: ?)
+method SmileID::Response#headers()
+method SmileID::Response#json()
+method SmileID::Response#raw_body()
+method SmileID::Response#status()
+method SmileID::Response.new(status:, headers:, raw_body:)
+method SmileID::Telemetry.headers()
+method SmileID::Transport#send_request(method:, url:, headers:, query: ?, body: ?, retryable: ?, timeout: ?)
+method SmileID::Transport.new(config)
+method SmileID::UserDetails#email()
+method SmileID::UserDetails#given_names()
+method SmileID::UserDetails#last_name()
+method SmileID::UserDetails#phone_number()
+method SmileID::UserDetails#to_h()
+method SmileID::UserDetails#validate!()
+method SmileID::UserDetails.coerce(input)
+method SmileID::UserDetails.from_hash(hash)
+method SmileID::UserDetails.new(given_names:, last_name:, email: ?, phone_number: ?)
+module SmileID
+module SmileID::Errors
+module SmileID::Generated
+module SmileID::Generated::Models
+module SmileID::Generated::Operations
+module SmileID::Helpers
+module SmileID::Helpers::Multipart
+module SmileID::Resources
+module SmileID::Telemetry
+struct SmileID::Generated::Operations::Operation: http_method, path, authenticated, partner_id_header, body_kind, idempotent, success_statuses

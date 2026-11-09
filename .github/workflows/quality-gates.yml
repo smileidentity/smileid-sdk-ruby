@@ -1,0 +1,118 @@
+name: quality-gates
+
+# Gates from the SDK parity plan: no breaking API change without the
+# `breaking` label, full coverage of lib/usesmileid/generated/, and, on bot
+# pull requests, full coverage of changed lines with no coverage exclusions.
+on:
+  pull_request:
+    # labeled and unlabeled re-run the gates when `breaking` or a bot label
+    # is added or removed.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-gates-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  BUNDLE_FROZEN: "true"
+  # A bot PR is labelled spec-sync, parity-port or release, or opened by a
+  # [bot] account. Some checks only fail on bot PRs.
+  BOT_PR: >-
+    ${{ contains(github.event.pull_request.labels.*.name, 'spec-sync')
+    || contains(github.event.pull_request.labels.*.name, 'parity-port')
+    || contains(github.event.pull_request.labels.*.name, 'release')
+    || endsWith(github.event.pull_request.user.login, '[bot]') }}
+
+jobs:
+  api-compat:
+    name: api-compat
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+      - name: Compare the public API with the last release
+        env:
+          BREAKING_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'breaking') }}
+        run: |
+          tag="$(git describe --tags --abbrev=0 --match 'v[0-9]*' HEAD 2>/dev/null || true)"
+          if [ -z "$tag" ]; then
+            echo "::notice::No v* release tag yet, so there is no released API to compare with."
+            exit 0
+          fi
+
+          git worktree add --detach "$RUNNER_TEMP/release" "$tag"
+          bundle exec ruby scripts/api_snapshot.rb "$RUNNER_TEMP/release/lib" > "$RUNNER_TEMP/release-api.txt"
+          bundle exec ruby scripts/api_snapshot.rb lib > "$RUNNER_TEMP/head-api.txt"
+
+          echo "Comparing with $tag"
+          if ruby scripts/api_compat.rb "$RUNNER_TEMP/release-api.txt" "$RUNNER_TEMP/head-api.txt"; then
+            exit 0
+          fi
+          if [ "$BREAKING_LABEL" = "true" ]; then
+            echo "::warning::The public API breaks compatibility with $tag. Allowed because this PR is labelled 'breaking'; the next release must be a major version."
+            exit 0
+          fi
+          echo "::error::The public API breaks compatibility with $tag. Keep the old API working, or label this PR 'breaking' if the break is intended."
+          exit 1
+
+  coverage:
+    name: coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
+      # spec/support/coverage.rb fails this step unless lib/usesmileid/generated/
+      # has 100% line and branch coverage.
+      - name: Run tests with coverage
+        env:
+          COVERAGE: "1"
+        run: bundle exec rspec
+
+      - name: Upload coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage
+          path: coverage/coverage.xml
+          if-no-files-found: error
+
+      - name: Check changed lines are covered
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          pipx install diff-cover==11.0.1
+          if diff-cover coverage/coverage.xml --compare-branch="origin/$BASE_REF" --fail-under=100; then
+            exit 0
+          fi
+          if [ "$BOT_PR" = "true" ]; then
+            echo "::error::Bot PRs must cover every changed line. Add tests for the lines listed above."
+            exit 1
+          fi
+          echo "::warning::Some changed lines are not covered. This only fails bot PRs."
+
+      - name: Check no coverage exclusions were added
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          if scripts/check-coverage-exclusions.sh "origin/$BASE_REF"; then
+            exit 0
+          fi
+          if [ "$BOT_PR" = "true" ]; then
+            echo "::error::Bot PRs may not exclude code from coverage. Add tests instead."
+            exit 1
+          fi
+          echo "::warning::This PR adds coverage exclusions. This only fails bot PRs."

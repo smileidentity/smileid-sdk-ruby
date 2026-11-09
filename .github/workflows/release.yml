@@ -19,8 +19,14 @@ jobs:
     name: Guard tag matches gem version
     if: github.repository == 'smileidentity/smileid-sdk-ruby'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history and tags, to find the previous release.
+          fetch-depth: 0
       - uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
         with:
           ruby-version: .ruby-version
@@ -39,6 +45,42 @@ jobs:
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           if ! grep -qE "^## \[${TAG_VERSION//./\\.}\]" CHANGELOG.md; then
             echo "::error::CHANGELOG.md has no '## [$TAG_VERSION]' heading for tag $GITHUB_REF_NAME"
+            exit 1
+          fi
+
+      # A PR labelled `breaking` merged since the previous release needs a
+      # major version, and a major version needs at least one such PR.
+      - name: Verify the major version matches breaking PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PREVIOUS_TAG="$(git describe --tags --abbrev=0 --match 'v[0-9]*' "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "::notice::No release before $GITHUB_REF_NAME, so there is nothing to compare with."
+            exit 0
+          fi
+
+          SINCE="$(TZ=UTC git log -1 --date=format-local:%Y-%m-%dT%H:%M:%SZ --format=%cd "$PREVIOUS_TAG")"
+          BREAKING_PRS=""
+          while read -r number sha; do
+            # Only count PRs whose merge is part of this release.
+            if [ -n "$sha" ] && git merge-base --is-ancestor "$sha" "$GITHUB_SHA" 2>/dev/null; then
+              BREAKING_PRS="$BREAKING_PRS #$number"
+            fi
+          done < <(gh pr list --repo "$GITHUB_REPOSITORY" --state merged --base main --label breaking \
+            --search "merged:>=$SINCE" --limit 200 --json number,mergeCommit \
+            --jq '.[] | "\(.number) \(.mergeCommit.oid // "")"')
+
+          PREVIOUS_MAJOR="$(echo "${PREVIOUS_TAG#v}" | cut -d. -f1)"
+          TAG_MAJOR="$(echo "${GITHUB_REF_NAME#v}" | cut -d. -f1)"
+          echo "Previous release $PREVIOUS_TAG; breaking PRs since then:${BREAKING_PRS:- none}"
+
+          if [ -n "$BREAKING_PRS" ] && [ "$TAG_MAJOR" -le "$PREVIOUS_MAJOR" ]; then
+            echo "::error::PRs labelled 'breaking' were merged since $PREVIOUS_TAG ($BREAKING_PRS ), so $GITHUB_REF_NAME must be a major version."
+            exit 1
+          fi
+          if [ -z "$BREAKING_PRS" ] && [ "$TAG_MAJOR" -gt "$PREVIOUS_MAJOR" ]; then
+            echo "::error::$GITHUB_REF_NAME is a major version, but no PR labelled 'breaking' was merged since $PREVIOUS_TAG."
             exit 1
           fi
 
