@@ -26,7 +26,7 @@ Automated pull requests use these labels and branches:
 | Label | Branch | Meaning |
 |---|---|---|
 | `spec-sync` | `spec-sync/rolling` | Brings the SDK up to a new spec tag. There is one rolling pull request at a time, and the automation finds it by this branch name, so don't open another. |
-| `spec-sync` | `spec-sync/<scope>` | A run limited to one product, such as the backlog run split by product. |
+| `spec-sync` | `spec-sync/<scope>` | A manual run limited to one part of the spec, such as AML operations. |
 | `spec-sync` and `breaking` | `spec-sync/breaking-<tag>` | A change that needs a major release. Breaking changes always get their own pull request. |
 | `release` | `release/vX.Y.Z` | A version bump and changelog entry. Made by hand for now. An automated release train is planned. |
 
@@ -38,7 +38,7 @@ Add `parity:skip` to a pull request that should not be ported to the other SDKs.
 
 Tests:
 
-- Every new operation needs a golden fixture test, which checks the exact request body and headers, and tests that parse its responses. Golden fixture tests live in `spec/usesmileid/multipart_serialization_spec.rb`; follow the existing cases there. Shared persona cases for integration tests live in the private `smileid-sdk-fixtures` repository.
+- Every new operation needs a golden fixture test, which checks the exact request body and headers, and tests that parse its responses. Golden fixture tests for each operation live in `spec/usesmileid/request_routing_spec.rb`; follow the existing cases there. `spec/usesmileid/multipart_serialization_spec.rb` tests the multipart builder itself, so change it only when the builder changes. Shared persona cases for integration tests live in the private `smileid-sdk-fixtures` repository.
 - Changed lines must be fully covered by tests. Don't add coverage exclusion comments.
 
 ## Running tests
