@@ -357,6 +357,264 @@ RSpec.describe 'request routing' do
     end
   end
 
+  describe 'aml.submit (One-Time AML)' do
+    let(:aml_args) { { countries: %w[NG KE], full_name: 'John Doe', **entry_args } }
+
+    it 'sends countries and aliases as JSON parts and binds the token to one_time_aml' do
+      captured = nil
+      token_stub = stub_request(:post, "#{TestHelpers::SANDBOX}/v3/token")
+                   .with { |request| request.body.include?('name="product"') }
+                   .to_return(status: 200, body: JSON.generate(token: jwt),
+                              headers: { 'Content-Type' => 'application/json' })
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/aml")
+        .to_return do |request|
+          captured = request
+          { status: 202, body: accepted_body(status: 'accepted'),
+            headers: { 'Content-Type' => 'application/json' } }
+        end
+
+      response = client.aml.submit(
+        **aml_args, aliases: ['Johnny Doe'], birth_year: '1990', strict_match: false,
+                    search_existing_user: false, callback_url: 'https://example.com/cb',
+                    partner_params: { 'order_id' => 'ORD-1' }, user_id: 'user-1234'
+      )
+
+      expect(token_stub).to have_been_requested
+      expect(captured.headers['Smileid-Token']).to eq(jwt)
+      expect(captured.headers['User-Id']).to eq('user-1234')
+      expect(captured.headers['Smileid-Partner-Id']).to be_nil
+      expect(captured.headers['Content-Type']).to start_with('multipart/form-data; boundary=')
+      body = captured.body.dup.force_encoding('UTF-8')
+      expect(body).to include("name=\"countries\"\r\nContent-Type: application/json\r\n\r\n" \
+                              "[\"NG\",\"KE\"]\r\n")
+      expect(body).to include("name=\"aliases\"\r\nContent-Type: application/json\r\n\r\n" \
+                              "[\"Johnny Doe\"]\r\n")
+      expect(body).to include("name=\"full_name\"\r\n\r\nJohn Doe\r\n")
+      expect(body).to include("name=\"birth_year\"\r\n\r\n1990\r\n")
+      expect(body).to include("name=\"strict_match\"\r\n\r\nfalse\r\n")
+      expect(body).to include("name=\"search_existing_user\"\r\n\r\nfalse\r\n")
+      expect(body).to include("name=\"user_id\"\r\n\r\nuser-1234\r\n")
+      expect(body).to include("name=\"callback_url\"\r\n\r\nhttps://example.com/cb\r\n")
+      expect(body).to include("name=\"partner_params\"\r\nContent-Type: application/json\r\n\r\n" \
+                              '{"order_id":"ORD-1"}')
+      expect(body).to include("name=\"user_details\"\r\nContent-Type: application/json\r\n\r\n" \
+                              '{"given_names":"John","last_name":"Doe","email":"john@example.com"}')
+      expect(response.job_id).to eq('job_01h8x9y2z3a4b5c6d7e8f9g0h1')
+      expect(response.accepted?).to be(true)
+    end
+
+    it 'falls back to the default callback URL' do
+      cb_client = build_client(default_callback_url: 'https://example.com/default-cb')
+      captured = nil
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/aml")
+        .to_return do |request|
+          captured = request
+          { status: 202, body: accepted_body, headers: { 'Content-Type' => 'application/json' } }
+        end
+
+      cb_client.aml.submit(**aml_args)
+      expect(captured.body.dup.force_encoding('UTF-8'))
+        .to include("name=\"callback_url\"\r\n\r\nhttps://example.com/default-cb")
+    end
+
+    it 'rejects a non-https callback URL before sending' do
+      expect { client.aml.submit(**aml_args, callback_url: 'http://example.com/cb') }
+        .to raise_error(SmileID::Errors::ValidationError)
+    end
+  end
+
+  describe 'aml.submit_sync (One-Time AML, inline result)' do
+    let(:aml_args) { { countries: ['NG'], full_name: 'John Doe', **entry_args } }
+    let(:result_body) do
+      JSON.generate(
+        status: 'attention', message: 'Screening completed: matches found.',
+        reason: 'aml_match_found', created_at: '2026-07-20T12:00:00.000Z',
+        completed_at: '2026-07-20T12:00:01.000Z', product: 'one_time_aml',
+        partner_params: nil, kyc_receipt: 'https://example.com/receipt', strict_match: true,
+        no_of_persons_found: 1, people: [{ 'name' => 'Gbenga Afolabi' }],
+        user_provided_info: { given_names: 'John', last_name: 'Doe',
+                              email: 'john@example.com', phone_number: nil },
+        consent: { granted: true }, antifraud: nil, device_signals: nil
+      )
+    end
+
+    it 'sends the idempotency key and parses the inline result with its headers' do
+      captured = nil
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/aml/sync")
+        .to_return do |request|
+          captured = request
+          { status: 200, body: result_body,
+            headers: { 'Content-Type' => 'application/json',
+                       'SmileID-Job-ID' => 'job_01h8x9y2z3a4b5c6d7e8f9g0h1',
+                       'User-ID' => 'user-1234', 'Response-Signature' => 'c2ln',
+                       'Response-Timestamp' => '2026-07-20T12:00:01.000Z' } }
+        end
+
+      result = client.aml.submit_sync(**aml_args, user_id: 'user-1234',
+                                                  idempotency_key: 'kuda-onboarding-8f14e45fceea167a',
+                                                  callback_url: 'https://example.com/cb')
+
+      expect(captured.headers['Smileid-Idempotency-Key']).to eq('kuda-onboarding-8f14e45fceea167a')
+      expect(captured.headers['Smileid-Token']).to eq(jwt)
+      body = captured.body.dup.force_encoding('UTF-8')
+      expect(body).to include("name=\"countries\"\r\nContent-Type: application/json\r\n\r\n" \
+                              "[\"NG\"]\r\n")
+      expect(body).to include("name=\"callback_url\"\r\n\r\nhttps://example.com/cb\r\n")
+      expect(result.status).to eq('attention')
+      expect(result.reason).to eq('aml_match_found')
+      expect(result.no_of_persons_found).to eq(1)
+      expect(result.people.first['name']).to eq('Gbenga Afolabi')
+      expect(result.user_provided_info['given_names']).to eq('John')
+      expect(result.job_id).to eq('job_01h8x9y2z3a4b5c6d7e8f9g0h1')
+      expect(result.user_id).to eq('user-1234')
+      expect(result.response_signature).to eq('c2ln')
+      expect(result.response_timestamp).to eq('2026-07-20T12:00:01.000Z')
+    end
+
+    it 'sends no idempotency key or callback_url when none is given' do
+      captured = nil
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/aml/sync")
+        .to_return do |request|
+          captured = request
+          { status: 200, body: result_body, headers: { 'Content-Type' => 'application/json' } }
+        end
+
+      client.aml.submit_sync(**aml_args)
+      expect(captured.headers).not_to have_key('Smileid-Idempotency-Key')
+      expect(captured.body.dup.force_encoding('UTF-8')).not_to include('name="callback_url"')
+    end
+
+    it 'raises a SmileIDError with status 408 on a provider timeout, without retrying' do
+      stub = stub_request(:post, "#{TestHelpers::SANDBOX}/v3/aml/sync")
+             .to_return(status: 408,
+                        body: JSON.generate(status: 'Request Timeout', message: 'Provider timed out.'),
+                        headers: { 'Content-Type' => 'application/json' })
+
+      expect { client.aml.submit_sync(**aml_args) }
+        .to raise_error(SmileID::Errors::SmileIDError) { |error|
+          expect(error.status_code).to eq(408)
+          expect(error.message).to eq('Provider timed out.')
+        }
+      expect(stub).to have_been_requested.once
+    end
+
+    it 'rejects a non-https callback URL before sending' do
+      expect { client.aml.submit_sync(**aml_args, callback_url: 'http://example.com/cb') }
+        .to raise_error(SmileID::Errors::ValidationError)
+    end
+  end
+
+  describe 'aml_monitoring.submit' do
+    it 'sends the golden multipart shape and binds the token to the aml product' do
+      captured = nil
+      token_stub = stub_request(:post, "#{TestHelpers::SANDBOX}/v3/token")
+                   .with { |request| request.body.include?("\r\n\r\naml\r\n") }
+                   .to_return(status: 200, body: JSON.generate(token: jwt),
+                              headers: { 'Content-Type' => 'application/json' })
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/aml/monitoring")
+        .to_return do |request|
+          captured = request
+          { status: 202, body: accepted_body(status: 'accepted'),
+            headers: { 'Content-Type' => 'application/json' } }
+        end
+
+      response = client.aml_monitoring.submit(
+        countries: %w[NG GH], full_name: 'Jane Doe', aliases: ['J. Doe'],
+        callback_url: 'https://example.com/cb', **entry_args
+      )
+
+      expect(token_stub).to have_been_requested
+      expect(captured.headers['Smileid-Token']).to eq(jwt)
+      expect(captured.headers['Smileid-Partner-Id']).to be_nil
+      body = captured.body.dup.force_encoding('UTF-8')
+      expect(body).to include("name=\"countries\"\r\nContent-Type: application/json\r\n\r\n" \
+                              "[\"NG\",\"GH\"]\r\n")
+      expect(body).to include("name=\"aliases\"\r\nContent-Type: application/json\r\n\r\n" \
+                              "[\"J. Doe\"]\r\n")
+      expect(body).to include("name=\"full_name\"\r\n\r\nJane Doe\r\n")
+      expect(body).to include("name=\"callback_url\"\r\n\r\nhttps://example.com/cb\r\n")
+      expect(body).to include("name=\"consent\"\r\nContent-Type: application/json\r\n\r\n")
+      expect(response.job_id).to eq('job_01h8x9y2z3a4b5c6d7e8f9g0h1')
+      expect(response.accepted?).to be(true)
+    end
+
+    it 'omits full_name when reusing an existing user' do
+      captured = nil
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/aml/monitoring")
+        .to_return do |request|
+          captured = request
+          { status: 202, body: accepted_body, headers: { 'Content-Type' => 'application/json' } }
+        end
+
+      client.aml_monitoring.submit(countries: ['NG'], search_existing_user: true, user_id: 'user-1234',
+                                   callback_url: 'https://example.com/cb', **entry_args)
+      body = captured.body.dup.force_encoding('UTF-8')
+      expect(body).not_to include('name="full_name"')
+      expect(body).to include("name=\"search_existing_user\"\r\n\r\ntrue\r\n")
+      expect(captured.headers['User-Id']).to eq('user-1234')
+    end
+  end
+
+  describe 'aml_monitoring.news' do
+    let(:news_body) do
+      JSON.generate(
+        job_id: 'a1b2c3d4e5', product: 'aml_monitoring_news', user_id: 'user_123',
+        meta: { current_page: 1, limit: 25, total_count: 1 },
+        news: [{ body: 'Sample adverse-media content.', published_date: '2023-01-01',
+                 publisher: 'Publisher 1', publisher_country_code: 'NG',
+                 title: 'Sample AML Monitoring News Item', url: 'www.example.com/article1' }]
+      )
+    end
+
+    it 'routes the path and query, sends the token and parses the articles' do
+      stub = stub_request(:get, "#{TestHelpers::SANDBOX}/v3/aml/monitoring/a1b2c3d4e5/news/ref%20001")
+             .with(query: { 'news_category' => 'financial_crime', 'page' => '2', 'limit' => '10' },
+                   headers: { 'SmileID-Token' => jwt })
+             .to_return(status: 200, body: news_body, headers: { 'Content-Type' => 'application/json' })
+
+      response = client.aml_monitoring.news('a1b2c3d4e5', 'ref 001',
+                                            news_category: 'financial_crime', page: 2, limit: 10)
+
+      expect(stub).to have_been_requested
+      expect(response.job_id).to eq('a1b2c3d4e5')
+      expect(response.product).to eq('aml_monitoring_news')
+      expect(response.meta).to eq('current_page' => 1, 'limit' => 25, 'total_count' => 1)
+      item = response.news.first
+      expect(item).to be_a(SmileID::Generated::Models::AmlMonitoringNewsItem)
+      expect([item.title, item.publisher, item.publisher_country_code, item.published_date, item.url])
+        .to eq(['Sample AML Monitoring News Item', 'Publisher 1', 'NG', '2023-01-01',
+                'www.example.com/article1'])
+      expect(item.body).to eq('Sample adverse-media content.')
+    end
+
+    it 'omits page and limit when not given' do
+      stub = stub_request(:get, "#{TestHelpers::SANDBOX}/v3/aml/monitoring/a1b2c3d4e5/news/ref_001")
+             .with(query: { 'news_category' => 'terrorism' })
+             .to_return(status: 200, body: JSON.generate(job_id: 'a1b2c3d4e5'),
+                        headers: { 'Content-Type' => 'application/json' })
+
+      response = client.aml_monitoring.news('a1b2c3d4e5', 'ref_001', news_category: 'terrorism')
+      expect(stub).to have_been_requested
+      expect(response.news).to eq([])
+    end
+
+    it 'rejects an unknown news category before sending' do
+      expect { client.aml_monitoring.news('a1b2c3d4e5', 'ref_001', news_category: 'gossip') }
+        .to raise_error(SmileID::Errors::ValidationError, /news_category must be one of/)
+    end
+
+    it 'raises NotFoundError for an unknown reference' do
+      stub_request(:get, "#{TestHelpers::SANDBOX}/v3/aml/monitoring/a1b2c3d4e5/news/nope")
+        .with(query: { 'news_category' => 'other' })
+        .to_return(status: 404,
+                   body: JSON.generate(status: 'Not Found', message: 'REF not found for this AML job'),
+                   headers: { 'Content-Type' => 'application/json' })
+
+      expect { client.aml_monitoring.news('a1b2c3d4e5', 'nope', news_category: 'other') }
+        .to raise_error(SmileID::Errors::NotFoundError, 'REF not found for this AML job')
+    end
+  end
+
   describe 'base_url override (spec 2.1)' do
     it 'wins over environment' do
       override = build_client(base_url: 'https://api.smileidentity.com', environment: :sandbox)

@@ -110,6 +110,42 @@ accepted.job_id     # => "job_..."
 accepted.accepted?  # => true
 ```
 
+### AML screening
+
+One-Time AML screens a name against sanctions, PEP and adverse-media lists. `aml.submit` queues the screening and the result goes to your callback URL:
+
+```ruby
+accepted = smile.aml.submit(
+  countries: ["NG", "KE"],
+  full_name: "John Doe",
+  user_details: user_details,
+  consent: consent,
+  callback_url: "https://example.com/callback"  # optional if a default is configured
+)
+```
+
+`aml.submit_sync` takes the same arguments but returns the result in the response, so `callback_url` is optional. Pass an `idempotency_key:` (16 to 128 characters of `A-Z a-z 0-9 - _`) so a retry returns the original result instead of a second billed screening. A provider timeout raises `SmileID::Errors::SmileIDError` with `status_code` 408.
+
+```ruby
+result = smile.aml.submit_sync(
+  countries: ["NG"], full_name: "John Doe",
+  user_details: user_details, consent: consent,
+  idempotency_key: "onboarding-8f14e45fceea167a"
+)
+result.status               # => "clear", "block", "attention" or "error"
+result.no_of_persons_found  # => 0
+result.job_id               # from the SmileID-Job-ID header
+```
+
+AML Monitoring enrols the person for ongoing screening. `aml_monitoring.submit` takes the same arguments (`full_name:` is optional with `search_existing_user: true` and a `user_id:`). `aml_monitoring.news` reads the news articles behind a person reference in a result:
+
+```ruby
+smile.aml_monitoring.submit(countries: ["NG"], full_name: "Jane Doe",
+                            user_details: user_details, consent: consent)
+news = smile.aml_monitoring.news("a1b2c3d4e5", "ref_001", news_category: "financial_crime", page: 1, limit: 25)
+news.news.first.title
+```
+
 ### Document verification
 
 ```ruby

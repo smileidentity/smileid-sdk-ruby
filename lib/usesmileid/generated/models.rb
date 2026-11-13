@@ -107,6 +107,85 @@ module SmileID
         end
       end
 
+      # Result of a One-Time AML screening: the body of POST /v3/aml/sync, which
+      # is the payload the async callback would have delivered. `status` is
+      # `clear`, `block`, `attention` or `error`. The response headers are kept
+      # alongside the body: the job and user ids, and the signature and
+      # timestamp that webhook verification code can check unchanged.
+      class OneTimeAmlResult
+        attr_reader :status, :message, :reason, :created_at, :completed_at, :product,
+                    :partner_params, :kyc_receipt, :strict_match, :no_of_persons_found,
+                    :people, :user_provided_info, :consent, :antifraud, :device_signals,
+                    :job_id, :user_id, :response_signature, :response_timestamp, :raw
+
+        def initialize(hash, headers = {})
+          @status = hash['status']
+          @message = hash['message']
+          @reason = hash['reason']
+          @created_at = hash['created_at']
+          @completed_at = hash['completed_at']
+          @product = hash['product']
+          @partner_params = hash['partner_params']
+          @kyc_receipt = hash['kyc_receipt']
+          @strict_match = hash['strict_match']
+          @no_of_persons_found = hash['no_of_persons_found']
+          @people = hash['people'] || []
+          @user_provided_info = hash['user_provided_info']
+          @consent = hash['consent']
+          @antifraud = hash['antifraud']
+          @device_signals = hash['device_signals']
+          @job_id = headers['smileid-job-id']
+          @user_id = headers['user-id']
+          @response_signature = headers['response-signature']
+          @response_timestamp = headers['response-timestamp']
+          @raw = hash
+        end
+
+        def self.from(hash, headers = {})
+          new(hash, headers)
+        end
+      end
+
+      # One article in an AML Monitoring news response.
+      class AmlMonitoringNewsItem
+        attr_reader :body, :published_date, :publisher, :publisher_country_code,
+                    :title, :url, :raw
+
+        def initialize(hash)
+          @body = hash['body']
+          @published_date = hash['published_date']
+          @publisher = hash['publisher']
+          @publisher_country_code = hash['publisher_country_code']
+          @title = hash['title']
+          @url = hash['url']
+          @raw = hash
+        end
+
+        def self.from(hash)
+          new(hash)
+        end
+      end
+
+      # Response from GET /v3/aml/monitoring/{job_id}/news/{reference}. `meta`
+      # is a plain hash with string keys (`current_page`, `limit`,
+      # `total_count`); `news` holds AmlMonitoringNewsItem objects.
+      class AmlMonitoringNewsResponse
+        attr_reader :job_id, :product, :user_id, :meta, :news, :raw
+
+        def initialize(hash)
+          @job_id = hash['job_id']
+          @product = hash['product']
+          @user_id = hash['user_id']
+          @meta = hash['meta']
+          @news = (hash['news'] || []).map { |item| AmlMonitoringNewsItem.from(item) }
+          @raw = hash
+        end
+
+        def self.from(hash)
+          new(hash)
+        end
+      end
+
       # Service responses (spec section 5.2). Nested collections are exposed as
       # plain hashes with string keys, exactly as they arrive on the wire.
       class BankCodesResponse

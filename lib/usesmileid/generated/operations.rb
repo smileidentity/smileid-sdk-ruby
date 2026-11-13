@@ -58,6 +58,26 @@ module SmileID
           partner_id_header: false, body_kind: :multipart, idempotent: false,
           success_statuses: [202]
         ),
+        one_time_aml: Operation.new(
+          http_method: :post, path: '/v3/aml', authenticated: true,
+          partner_id_header: false, body_kind: :multipart, idempotent: false,
+          success_statuses: [202]
+        ),
+        one_time_aml_sync: Operation.new(
+          http_method: :post, path: '/v3/aml/sync', authenticated: true,
+          partner_id_header: false, body_kind: :multipart, idempotent: false,
+          success_statuses: [200]
+        ),
+        aml_monitoring: Operation.new(
+          http_method: :post, path: '/v3/aml/monitoring', authenticated: true,
+          partner_id_header: false, body_kind: :multipart, idempotent: false,
+          success_statuses: [202]
+        ),
+        aml_monitoring_news: Operation.new(
+          http_method: :get, path: '/v3/aml/monitoring/{job_id}/news/{reference}',
+          authenticated: true, partner_id_header: false, body_kind: nil, idempotent: true,
+          success_statuses: [200]
+        ),
         status: Operation.new(
           http_method: :get, path: '/v3/status/{job_id}', authenticated: true,
           partner_id_header: false, body_kind: nil, idempotent: true,
