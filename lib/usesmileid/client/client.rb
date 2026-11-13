@@ -17,7 +17,10 @@ module SmileID
       '/v3/biometric_kyc' => 'biometric_kyc',
       '/v3/registration' => 'smart_selfie_registration',
       '/v3/authentication' => 'smart_selfie_authentication',
-      '/v3/compare' => 'smart_selfie_compare'
+      '/v3/compare' => 'smart_selfie_compare',
+      '/v3/aml' => 'one_time_aml',
+      '/v3/aml/sync' => 'one_time_aml',
+      '/v3/aml/monitoring' => 'aml'
     }.freeze
 
     attr_reader :config
@@ -57,6 +60,14 @@ module SmileID
       @users ||= Resources::Users.new(self)
     end
 
+    def aml
+      @aml ||= Resources::Aml.new(self)
+    end
+
+    def aml_monitoring
+      @aml_monitoring ||= Resources::AmlMonitoring.new(self)
+    end
+
     def services
       @services ||= Resources::Services.new(self)
     end
@@ -68,13 +79,13 @@ module SmileID
     #
     # @return [SmileID::Response] on a success status for the operation.
     def call(op_key, form: nil, path_params: {}, query: {}, user_id_header: nil, timeout: nil,
-             use_enrolled_image: false)
+             use_enrolled_image: false, extra_headers: nil)
       op = Generated::Operations.fetch(op_key)
       url = @config.base_url + interpolate(op.path, path_params)
       content_type, body = serialize(op, form)
       token = mint_token(op, form, user_id_header, use_enrolled_image, timeout) if op.authenticated
 
-      headers = build_headers(op, content_type, user_id_header, token)
+      headers = build_headers(op, content_type, user_id_header, token).merge(extra_headers || {})
       response = @transport.send_request(
         method: op.http_method, url: url, headers: headers, query: query || {},
         body: body, retryable: op.idempotent, timeout: timeout

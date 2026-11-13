@@ -17,12 +17,17 @@ class SmileID::Errors::UnexpectedResponseError < SmileID::Errors::SmileIDError
 class SmileID::Errors::ValidationError < SmileID::Errors::InvalidRequestError
 class SmileID::Generated::Models::AcceptedResponse < Object
 class SmileID::Generated::Models::AcceptedStatusResponse < Object
+class SmileID::Generated::Models::AmlMonitoringNewsItem < Object
+class SmileID::Generated::Models::AmlMonitoringNewsResponse < Object
 class SmileID::Generated::Models::BankCodesResponse < Object
 class SmileID::Generated::Models::IdStatusResponse < Object
 class SmileID::Generated::Models::JobStatus < Object
+class SmileID::Generated::Models::OneTimeAmlResult < Object
 class SmileID::Generated::Models::SupportedDocumentsResponse < Object
 class SmileID::Generated::Models::SupportedIdTypesResponse < Object
 class SmileID::Generated::Operations::Operation < Struct
+class SmileID::Resources::Aml < SmileID::Resources::Base
+class SmileID::Resources::AmlMonitoring < SmileID::Resources::Base
 class SmileID::Resources::Base < Object
 class SmileID::Resources::Biometric < SmileID::Resources::Base
 class SmileID::Resources::BiometricKyc < SmileID::Resources::Base
@@ -52,6 +57,7 @@ constant SmileID::Helpers::Multipart::JSON_PART_FIELDS: Array
 constant SmileID::Helpers::Multipart::MEDIA_TYPE: Regexp
 constant SmileID::Helpers::Multipart::PNG_CAPABLE_FIELDS: Array
 constant SmileID::Helpers::Multipart::PNG_MAGIC: String
+constant SmileID::Resources::AmlMonitoring::NEWS_CATEGORIES: Array
 constant SmileID::Resources::Users::REASONS: Array
 constant SmileID::Telemetry::SDK_NAME: String
 constant SmileID::Transport::BACKOFF_BASE: Float
@@ -59,9 +65,11 @@ constant SmileID::Transport::RETRY_AFTER_CAP: Integer
 constant SmileID::Transport::RETRY_STATUSES: Array
 constant SmileID::UserDetails::PHONE_NUMBER: Regexp
 constant SmileID::VERSION: String
+method SmileID::Client#aml()
+method SmileID::Client#aml_monitoring()
 method SmileID::Client#biometric()
 method SmileID::Client#biometric_kyc()
-method SmileID::Client#call(op_key, form: ?, path_params: ?, query: ?, user_id_header: ?, timeout: ?, use_enrolled_image: ?)
+method SmileID::Client#call(op_key, form: ?, path_params: ?, query: ?, user_id_header: ?, timeout: ?, use_enrolled_image: ?, extra_headers: ?)
 method SmileID::Client#config()
 method SmileID::Client#documents()
 method SmileID::Client#enhanced_kyc()
@@ -130,6 +138,23 @@ method SmileID::Generated::Models::AcceptedStatusResponse#status()
 method SmileID::Generated::Models::AcceptedStatusResponse#user_id()
 method SmileID::Generated::Models::AcceptedStatusResponse.from(hash)
 method SmileID::Generated::Models::AcceptedStatusResponse.new(status:, message: ?, job_id: ?, user_id: ?, raw: ?)
+method SmileID::Generated::Models::AmlMonitoringNewsItem#body()
+method SmileID::Generated::Models::AmlMonitoringNewsItem#published_date()
+method SmileID::Generated::Models::AmlMonitoringNewsItem#publisher()
+method SmileID::Generated::Models::AmlMonitoringNewsItem#publisher_country_code()
+method SmileID::Generated::Models::AmlMonitoringNewsItem#raw()
+method SmileID::Generated::Models::AmlMonitoringNewsItem#title()
+method SmileID::Generated::Models::AmlMonitoringNewsItem#url()
+method SmileID::Generated::Models::AmlMonitoringNewsItem.from(hash)
+method SmileID::Generated::Models::AmlMonitoringNewsItem.new(hash)
+method SmileID::Generated::Models::AmlMonitoringNewsResponse#job_id()
+method SmileID::Generated::Models::AmlMonitoringNewsResponse#meta()
+method SmileID::Generated::Models::AmlMonitoringNewsResponse#news()
+method SmileID::Generated::Models::AmlMonitoringNewsResponse#product()
+method SmileID::Generated::Models::AmlMonitoringNewsResponse#raw()
+method SmileID::Generated::Models::AmlMonitoringNewsResponse#user_id()
+method SmileID::Generated::Models::AmlMonitoringNewsResponse.from(hash)
+method SmileID::Generated::Models::AmlMonitoringNewsResponse.new(hash)
 method SmileID::Generated::Models::BankCodesResponse#bank_codes()
 method SmileID::Generated::Models::BankCodesResponse#raw()
 method SmileID::Generated::Models::BankCodesResponse.from(hash)
@@ -152,6 +177,28 @@ method SmileID::Generated::Models::JobStatus#status()
 method SmileID::Generated::Models::JobStatus#user_id()
 method SmileID::Generated::Models::JobStatus.from(hash)
 method SmileID::Generated::Models::JobStatus.new(status:, job_id: ?, user_id: ?, message: ?, raw: ?)
+method SmileID::Generated::Models::OneTimeAmlResult#antifraud()
+method SmileID::Generated::Models::OneTimeAmlResult#completed_at()
+method SmileID::Generated::Models::OneTimeAmlResult#consent()
+method SmileID::Generated::Models::OneTimeAmlResult#created_at()
+method SmileID::Generated::Models::OneTimeAmlResult#device_signals()
+method SmileID::Generated::Models::OneTimeAmlResult#job_id()
+method SmileID::Generated::Models::OneTimeAmlResult#kyc_receipt()
+method SmileID::Generated::Models::OneTimeAmlResult#message()
+method SmileID::Generated::Models::OneTimeAmlResult#no_of_persons_found()
+method SmileID::Generated::Models::OneTimeAmlResult#partner_params()
+method SmileID::Generated::Models::OneTimeAmlResult#people()
+method SmileID::Generated::Models::OneTimeAmlResult#product()
+method SmileID::Generated::Models::OneTimeAmlResult#raw()
+method SmileID::Generated::Models::OneTimeAmlResult#reason()
+method SmileID::Generated::Models::OneTimeAmlResult#response_signature()
+method SmileID::Generated::Models::OneTimeAmlResult#response_timestamp()
+method SmileID::Generated::Models::OneTimeAmlResult#status()
+method SmileID::Generated::Models::OneTimeAmlResult#strict_match()
+method SmileID::Generated::Models::OneTimeAmlResult#user_id()
+method SmileID::Generated::Models::OneTimeAmlResult#user_provided_info()
+method SmileID::Generated::Models::OneTimeAmlResult.from(hash, headers = ?)
+method SmileID::Generated::Models::OneTimeAmlResult.new(hash, headers = ?)
 method SmileID::Generated::Models::SupportedDocumentsResponse#raw()
 method SmileID::Generated::Models::SupportedDocumentsResponse#valid_documents()
 method SmileID::Generated::Models::SupportedDocumentsResponse.from(hash)
@@ -194,6 +241,12 @@ method SmileID::Helpers::Multipart.sanitize_filename(filename)
 method SmileID::Helpers::Multipart.scalar_string(value)
 method SmileID::Helpers::Multipart.text_part(name, value, boundary)
 method SmileID::Helpers::Multipart.validate_content_type!(content_type)
+method SmileID::Resources::Aml#submit(countries:, full_name:, user_details:, consent:, birth_year: ?, strict_match: ?, aliases: ?, search_existing_user: ?, callback_url: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
+method SmileID::Resources::Aml#submit_sync(countries:, full_name:, user_details:, consent:, birth_year: ?, strict_match: ?, aliases: ?, search_existing_user: ?, callback_url: ?, partner_params: ?, metadata: ?, user_id: ?, idempotency_key: ?, timeout: ?)
+method SmileID::Resources::Aml.new(client)
+method SmileID::Resources::AmlMonitoring#news(job_id, reference, news_category:, page: ?, limit: ?, timeout: ?)
+method SmileID::Resources::AmlMonitoring#submit(countries:, user_details:, consent:, full_name: ?, birth_year: ?, strict_match: ?, aliases: ?, search_existing_user: ?, callback_url: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
+method SmileID::Resources::AmlMonitoring.new(client)
 method SmileID::Resources::Base.new(client)
 method SmileID::Resources::Biometric#authenticate(user_id:, consent:, user_details:, selfie_image:, liveness_images:, callback_url: ?, sandbox_result: ?, partner_params: ?, metadata: ?, timeout: ?)
 method SmileID::Resources::Biometric#compare(selfie_image:, comparison_image:, comparison_image_type:, consent:, user_details:, liveness_images: ?, allow_new_enroll: ?, user_id: ?, callback_url: ?, sandbox_result: ?, partner_params: ?, metadata: ?, timeout: ?)
