@@ -19,8 +19,14 @@ jobs:
     name: Guard tag matches gem version
     if: github.repository == 'smileidentity/smileid-sdk-ruby'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Full history and tags, to find the previous release.
+          fetch-depth: 0
       - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: .ruby-version
@@ -39,6 +45,53 @@ jobs:
           TAG_VERSION="${GITHUB_REF_NAME#v}"
           if ! grep -qE "^## \[${TAG_VERSION//./\\.}\]" CHANGELOG.md; then
             echo "::error::CHANGELOG.md has no '## [$TAG_VERSION]' heading for tag $GITHUB_REF_NAME"
+            exit 1
+          fi
+
+      # A release that contains a PR labelled `breaking` (merged after the
+      # previous stable tag and before this one) needs a major version, and
+      # a major version needs at least one such PR, except 0.x to 1.0.0.
+      - name: Verify the major version matches breaking PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="$GITHUB_REF_NAME"
+          PREVIOUS_TAG="$(scripts/previous-release-tag.sh "${TAG}^")"
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "::notice::No stable release before $TAG, so there is nothing to compare with."
+            exit 0
+          fi
+
+          # A PR is in this release when its merge commit is reachable from
+          # the tag but not from the previous release tag.
+          # Read the list first, so that a gh failure fails the step.
+          CANDIDATES="$(gh pr list --repo "$GITHUB_REPOSITORY" --state merged --label breaking \
+            --limit 1000 --json number,mergeCommit \
+            --jq '.[] | "\(.number) \(.mergeCommit.oid // "")"')"
+          BREAKING_PRS=""
+          while read -r number sha; do
+            if [ -n "$sha" ] &&
+              git merge-base --is-ancestor "$sha" "$TAG" 2>/dev/null &&
+              ! git merge-base --is-ancestor "$sha" "$PREVIOUS_TAG" 2>/dev/null; then
+              BREAKING_PRS="$BREAKING_PRS #$number"
+            fi
+          done <<< "$CANDIDATES"
+
+          PREVIOUS_MAJOR="${PREVIOUS_TAG#v}"
+          PREVIOUS_MAJOR="${PREVIOUS_MAJOR%%.*}"
+          TAG_MAJOR="${TAG#v}"
+          TAG_MAJOR="${TAG_MAJOR%%.*}"
+          echo "Previous release $PREVIOUS_TAG; breaking PRs in $PREVIOUS_TAG..$TAG:${BREAKING_PRS:- none}"
+
+          if [ -n "$BREAKING_PRS" ] && [ "$TAG_MAJOR" -le "$PREVIOUS_MAJOR" ]; then
+            echo "::error::PRs labelled 'breaking' are in this release ($BREAKING_PRS ), so $TAG must be a major version."
+            exit 1
+          fi
+          # 0.x to 1.0.0 marks a stable API, not a break, so it needs no breaking PR.
+          if [ -z "$BREAKING_PRS" ] && [ "$TAG_MAJOR" -gt "$PREVIOUS_MAJOR" ] &&
+            ! { [ "$PREVIOUS_MAJOR" -eq 0 ] && [ "$TAG_MAJOR" -eq 1 ]; }; then
+            echo "::error::$TAG is a major version, but no PR labelled 'breaking' is in $PREVIOUS_TAG..$TAG."
             exit 1
           fi
 

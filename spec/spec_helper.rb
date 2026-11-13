@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+# Coverage must start before the SDK is loaded.
+require_relative 'support/coverage' if ENV['COVERAGE']
+
 require 'usesmileid'
 require 'webmock/rspec'
 require 'json'

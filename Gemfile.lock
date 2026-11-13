@@ -19,6 +19,7 @@ GEM
       bigdecimal
       rexml
     diff-lcs (1.6.2)
+    docile (1.4.1)
     faraday (2.14.3)
       faraday-net_http (>= 2.0, < 3.5)
       json
@@ -73,6 +74,15 @@ GEM
       parser (>= 3.3.7.2)
       prism (~> 1.7)
     ruby-progressbar (1.13.0)
+    simplecov (0.22.0)
+      docile (~> 1.1)
+      simplecov-html (~> 0.11)
+      simplecov_json_formatter (~> 0.1)
+    simplecov-cobertura (3.2.0)
+      rexml
+      simplecov (~> 0.19)
+    simplecov-html (0.13.2)
+    simplecov_json_formatter (0.1.4)
     thor (1.5.0)
     unicode-display_width (3.2.0)
       unicode-emoji (~> 4.1)
@@ -93,6 +103,8 @@ DEPENDENCIES
   public_suffix (< 7)
   rspec (~> 3.0)
   rubocop (~> 1.60)
+  simplecov (~> 0.22)
+  simplecov-cobertura (~> 3.1)
   usesmileid!
   webmock (~> 3.0)
 
