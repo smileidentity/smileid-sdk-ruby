@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - AML Monitoring: `aml_monitoring.submit` and `aml_monitoring.news`, which reads the news articles for one person in a monitoring result.
 - `countries` and `aliases` are sent as JSON multipart parts, as the AML endpoints require.
 
+### Fixed
+
+- `aml_monitoring.news` now mints its token with the `aml` product claim, as the spec's `x-smile-token-product` requires. Each operation's product now comes from the generated operations table (`Operation#product`), and `Client::PRODUCT_BY_PATH` is derived from it.
+
 ## [13.0.0] - 2026-11-09
 
 Version 12.2.0 was never published. Its changes are in this release, which is a major version because it breaks the 12.1.0 API.
