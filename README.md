@@ -40,7 +40,7 @@ smile = SmileID::Client.new(
 
 Partner ids are displayed zero-padded (for example 002) but must be passed without leading zeros (2).
 
-Authentication is internal: the SDK fetches a short-lived token from the API, caches it until just before expiry, and refreshes it once automatically if a request returns 401. You never see or pass a token.
+Authentication is internal: before each request the SDK fetches a short-lived token from the API. A job's token is bound to that job's product and, when the job names one, its user; other calls get a token with neither. A 401 raises `AuthenticationError` without a retry. You never see or pass a token.
 
 ### Environment selection
 
@@ -177,6 +177,20 @@ accepted = smile.biometric_kyc.verify(
 )
 ```
 
+To verify against a user's enrolled selfie instead of a fresh capture, set `use_enrolled_image: true` and pass the enrolled `user_id`; the selfie and liveness images may then be omitted.
+
+```ruby
+accepted = smile.biometric_kyc.verify(
+  use_enrolled_image: true,
+  user_id: "user-42",
+  country: "NG",
+  id_type: "NIN",
+  id_number: "12345678901",
+  user_details: user_details,
+  consent: consent
+)
+```
+
 ### Biometric enrollment
 
 ```ruby
@@ -192,7 +206,7 @@ accepted = smile.biometric.enroll(
 
 ### Biometric authentication
 
-`user_id` is required and must match an enrolled user. Images are required unless you set `use_enrolled_image: true`.
+`user_id` is required and must match an enrolled user. The selfie and liveness images are always required.
 
 ```ruby
 accepted = smile.biometric.authenticate(
@@ -296,7 +310,7 @@ Every API failure raises a typed error under `SmileID::Errors`, keyed on the HTT
 | Error | Raised on |
 |---|---|
 | `InvalidRequestError` | 400, 415, and failed client-side validation (`ValidationError` subclass) |
-| `AuthenticationError` | 401 after one automatic token refresh |
+| `AuthenticationError` | 401 |
 | `PaymentRequiredError` | 402 — insufficient wallet balance |
 | `PermissionError` | 403 |
 | `NotFoundError` | 404 (except `verifications.retrieve`, which returns a `not_found` status) |

@@ -19,7 +19,7 @@ jobs:
       issues: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1.329.0
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: .ruby-version
           bundler-cache: true
@@ -32,9 +32,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          EXISTING=$(gh issue list --label "security-audit" --state open --json number --jq 'length')
-          if [ "$EXISTING" -gt 0 ]; then exit 0; fi
+          EXISTING=$(gh issue list --label "security-audit" --state open --json number --jq 'length' || echo "0")
+          if [ "${EXISTING:-0}" -gt 0 ]; then exit 0; fi
           TITLE_DATE=$(date +%Y-%m-%d)
+          gh label create "security-audit" --color "D93F0B" --force 2>/dev/null || true
+          gh label create "priority:high" --color "B60205" --force 2>/dev/null || true
           gh issue create \
             --title "Security: Ruby dependency vulnerabilities detected (${TITLE_DATE})" \
             --label "security-audit" \

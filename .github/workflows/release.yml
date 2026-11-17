@@ -19,28 +19,28 @@ jobs:
     name: Guard tag matches gem version
     if: github.repository == 'smileidentity/smileid-sdk-ruby'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1.329.0
+        with:
+          # Full history and tags, to find the previous release.
+          fetch-depth: 0
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: .ruby-version
           bundler-cache: false
-      - name: Verify tag matches SmileID::VERSION
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          GEM_VERSION="$(ruby -Ilib -e 'require "usesmileid/version"; puts SmileID::VERSION')"
-          if [ "$TAG_VERSION" != "$GEM_VERSION" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME (version $TAG_VERSION) does not match lib/usesmileid/version.rb (SmileID::VERSION = $GEM_VERSION)"
-            exit 1
-          fi
-
-      - name: Verify CHANGELOG.md has an entry for this version
-        run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          if ! grep -qE "^## \[${TAG_VERSION//./\\.}\]" CHANGELOG.md; then
-            echo "::error::CHANGELOG.md has no '## [$TAG_VERSION]' heading for tag $GITHUB_REF_NAME"
-            exit 1
-          fi
+      # The tag must match SmileID::VERSION and have a dated CHANGELOG.md
+      # heading. A release that contains a PR labelled `breaking` (merged
+      # after the previous stable tag and before this one) needs a major
+      # version, and a major version needs at least one such PR, except 0.x
+      # to 1.0.0. Pull requests labelled `release` run the same script
+      # before the tag is pushed.
+      - name: Verify version, changelog and breaking PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/check-release.sh "$GITHUB_REF_NAME"
 
   test:
     name: Test
@@ -58,7 +58,7 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ruby/setup-ruby@651ff0d62c5c79bed6d53ec518387aae20e72c1a # v1.329.0
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: .ruby-version
           bundler-cache: true

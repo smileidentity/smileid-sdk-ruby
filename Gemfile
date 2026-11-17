@@ -11,5 +11,8 @@ group :development, :test do
   gem 'public_suffix', '< 7'
   gem 'rspec', '~> 3.0'
   gem 'rubocop', '~> 1.60'
+  # simplecov 1.x needs Ruby 3.3 and simplecov-cobertura 4.x needs Ruby 3.2, but CI tests Ruby 3.0.
+  gem 'simplecov', '~> 0.22', require: false
+  gem 'simplecov-cobertura', '~> 3.1', require: false
   gem 'webmock', '~> 3.0', require: false
 end

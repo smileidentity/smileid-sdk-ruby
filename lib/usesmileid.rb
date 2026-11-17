@@ -9,7 +9,6 @@ require 'usesmileid/helpers/user_details'
 require 'usesmileid/helpers/multipart'
 require 'usesmileid/client/config'
 require 'usesmileid/client/transport'
-require 'usesmileid/client/auth'
 require 'usesmileid/client/resources'
 require 'usesmileid/client/client'
 

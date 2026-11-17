@@ -36,7 +36,7 @@ module SmileID
   # The single HTTP transport (spec section 2.2, 2.6). Builds the Faraday
   # request, sends it, retries idempotent operations on transient failures
   # honouring Retry-After, and normalizes the response. It does not touch auth;
-  # the client injects tokens and handles the refresh-on-401 dance.
+  # the client mints and injects tokens.
   class Transport
     RETRY_STATUSES = [408, 429, 500, 502, 503, 504].freeze
     BACKOFF_BASE = 0.5

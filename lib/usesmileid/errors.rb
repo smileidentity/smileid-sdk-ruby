@@ -39,7 +39,7 @@ module SmileID
     # Raised before send when a local validation rule fails (spec section 5.1, 6.11).
     class ValidationError < InvalidRequestError; end
 
-    # 401 — token missing, invalid, or expired after a single refresh attempt.
+    # 401 — token missing, invalid or expired.
     class AuthenticationError < SmileIDError; end
 
     # 402 — insufficient wallet balance.
