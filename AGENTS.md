@@ -50,9 +50,15 @@ bundle install
 bundle exec rspec
 ```
 
-CI runs `bundler-audit` as "Security Audit" on pull requests that touch `Gemfile`, `Gemfile.lock` or the gemspec, and daily on `main`. A failed daily run only shows as red: its issue step needs the `security-audit` and `priority:high` labels, which do not exist in this repo (as of October 2026), so it opens no issue. Run it locally with `bundle exec bundler-audit update && bundle exec bundler-audit check`. Fix a flagged transitive gem, such as `json`, with `bundle update <gem> --conservative`.
+CI runs `bundler-audit` as "Security Audit" on pull requests that touch `Gemfile`, `Gemfile.lock` or the gemspec, and daily on `main`. A failed daily run opens an issue labelled `security-audit` and `priority:high`, creating the labels if they don't exist, unless one is already open. Run it locally with `bundle exec bundler-audit update && bundle exec bundler-audit check`. Fix a flagged transitive gem, such as `json`, with `bundle update <gem> --conservative`.
 
 The sandbox e2e spec skips unless `SMILE_PARTNER_ID` and `SMILE_API_KEY` are set. CI runs it on pushes to `main` and nightly, not on pull requests. If it skipped locally, say "not run against sandbox" in the pull request.
+
+## Releases
+
+Pushing a `vX.Y.Z` tag runs `release.yml`, which runs `scripts/check-release.sh` before it publishes. The tag must match `SmileID::VERSION` in `lib/usesmileid/version.rb`, `CHANGELOG.md` must have a dated `## [X.Y.Z] - YYYY-MM-DD` heading for it, and the major version must match the PRs labelled `breaking` since the previous stable tag.
+
+A tag can't be moved or reused once pushed, so a pull request labelled `release` runs the same checks in quality-gates before the tag exists. They also fail if the version is already tagged. Fix any failure there before you tag. `scripts/test-check-release.sh` tests the script, and CI runs ShellCheck on `scripts/`.
 
 ## Org-wide agent conventions
 
