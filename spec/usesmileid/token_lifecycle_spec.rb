@@ -169,6 +169,14 @@ RSpec.describe 'token lifecycle' do
     end
   end
 
+  it 'takes each product from the operation table, matching the job calls' do
+    expected = job_calls.to_h { |product, (path, _)| [path, product] }
+
+    expect(SmileID::Client::PRODUCT_BY_PATH).to eq(expected)
+    unbound = SmileID::Generated::Operations::OPS.values.reject(&:token_product)
+    expect(unbound.map(&:path)).to include('/v3/status/{job_id}', '/v3/services/id_status')
+  end
+
   it 'binds only the product when the job has no user_id' do
     _, claims = capture_token_claims
     stub_accepted('enhanced_kyc')

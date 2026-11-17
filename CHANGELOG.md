@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Token products now come from each operation's `x-smile-token-product` in the generated operation table (`Operation#token_product`). `Client::PRODUCT_BY_PATH` is derived from it. Spec v3.1188.0.
+
 ## [13.0.0] - 2026-11-09
 
 Version 12.2.0 was never published. Its changes are in this release, which is a major version because it breaks the 12.1.0 API.

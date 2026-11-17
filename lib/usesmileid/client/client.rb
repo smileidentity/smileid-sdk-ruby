@@ -8,17 +8,12 @@ module SmileID
   # resource verbs, e.g. client.enhanced_kyc.verify(...).
   class Client
     # Mirrors the API authorizer: a token bound to a product is accepted only on
-    # that product's endpoint. Paths absent here mint a token with no claims.
-    PRODUCT_BY_PATH = {
-      '/v3/enhanced_kyc' => 'enhanced_kyc',
-      '/v3/document_verification' => 'document_verification',
-      '/v3/enhanced_document_verification' => 'enhanced_document_verification',
-      '/v3/residency_document_verification' => 'residency_document_verification',
-      '/v3/biometric_kyc' => 'biometric_kyc',
-      '/v3/registration' => 'smart_selfie_registration',
-      '/v3/authentication' => 'smart_selfie_authentication',
-      '/v3/compare' => 'smart_selfie_compare'
-    }.freeze
+    # that product's endpoint. Taken from each operation's x-smile-token-product;
+    # paths absent here mint a token with no product claim.
+    PRODUCT_BY_PATH = Generated::Operations::OPS.values
+                                                .select(&:token_product)
+                                                .to_h { |op| [op.path, op.token_product] }
+                                                .freeze
 
     attr_reader :config
 

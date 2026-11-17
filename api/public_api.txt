@@ -175,6 +175,8 @@ method SmileID::Generated::Operations::Operation#path()
 method SmileID::Generated::Operations::Operation#path=(_)
 method SmileID::Generated::Operations::Operation#success_statuses()
 method SmileID::Generated::Operations::Operation#success_statuses=(_)
+method SmileID::Generated::Operations::Operation#token_product()
+method SmileID::Generated::Operations::Operation#token_product=(_)
 method SmileID::Helpers::Multipart.append_field(body, field, value, boundary)
 method SmileID::Helpers::Multipart.binary_part(name, input, boundary, index: ?)
 method SmileID::Helpers::Multipart.build(form, boundary: ?)
@@ -246,4 +248,4 @@ module SmileID::Helpers
 module SmileID::Helpers::Multipart
 module SmileID::Resources
 module SmileID::Telemetry
-struct SmileID::Generated::Operations::Operation: http_method, path, authenticated, partner_id_header, body_kind, idempotent, success_statuses
+struct SmileID::Generated::Operations::Operation: http_method, path, authenticated, partner_id_header, body_kind, idempotent, success_statuses, token_product
