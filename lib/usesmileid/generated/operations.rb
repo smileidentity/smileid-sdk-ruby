@@ -14,7 +14,7 @@ module SmileID
         :body_kind,       # :multipart / :json / nil
         :idempotent,      # safe to auto-retry? (GETs + token only)
         :success_statuses, # statuses treated as success (not raised)
-        :token_product, # x-smile-token-product: the token's product claim, or nil
+        :product,          # x-smile-token-product: the token's product claim, nil for none
         keyword_init: true
       )
 
@@ -23,49 +23,73 @@ module SmileID
           http_method: :post, path: '/v3/enhanced_kyc', authenticated: true,
           partner_id_header: false, body_kind: :multipart, idempotent: false,
           success_statuses: [202],
-          token_product: 'enhanced_kyc'
+          product: 'enhanced_kyc'
         ),
         document_verification: Operation.new(
           http_method: :post, path: '/v3/document_verification', authenticated: true,
           partner_id_header: true, body_kind: :multipart, idempotent: false,
           success_statuses: [202],
-          token_product: 'document_verification'
+          product: 'document_verification'
         ),
         enhanced_document_verification: Operation.new(
           http_method: :post, path: '/v3/enhanced_document_verification', authenticated: true,
           partner_id_header: true, body_kind: :multipart, idempotent: false,
           success_statuses: [202],
-          token_product: 'enhanced_document_verification'
+          product: 'enhanced_document_verification'
         ),
         residency_document_verification: Operation.new(
           http_method: :post, path: '/v3/residency_document_verification', authenticated: true,
           partner_id_header: true, body_kind: :multipart, idempotent: false,
           success_statuses: [202],
-          token_product: 'residency_document_verification'
+          product: 'residency_document_verification'
         ),
         biometric_kyc: Operation.new(
           http_method: :post, path: '/v3/biometric_kyc', authenticated: true,
           partner_id_header: true, body_kind: :multipart, idempotent: false,
           success_statuses: [202],
-          token_product: 'biometric_kyc'
+          product: 'biometric_kyc'
         ),
         registration: Operation.new(
           http_method: :post, path: '/v3/registration', authenticated: true,
           partner_id_header: false, body_kind: :multipart, idempotent: false,
           success_statuses: [202],
-          token_product: 'smart_selfie_registration'
+          product: 'smart_selfie_registration'
         ),
         authentication: Operation.new(
           http_method: :post, path: '/v3/authentication', authenticated: true,
           partner_id_header: false, body_kind: :multipart, idempotent: false,
           success_statuses: [202],
-          token_product: 'smart_selfie_authentication'
+          product: 'smart_selfie_authentication'
         ),
         compare: Operation.new(
           http_method: :post, path: '/v3/compare', authenticated: true,
           partner_id_header: false, body_kind: :multipart, idempotent: false,
           success_statuses: [202],
-          token_product: 'smart_selfie_compare'
+          product: 'smart_selfie_compare'
+        ),
+        one_time_aml: Operation.new(
+          http_method: :post, path: '/v3/aml', authenticated: true,
+          partner_id_header: false, body_kind: :multipart, idempotent: false,
+          success_statuses: [202],
+          product: 'one_time_aml'
+        ),
+        one_time_aml_sync: Operation.new(
+          http_method: :post, path: '/v3/aml/sync', authenticated: true,
+          partner_id_header: false, body_kind: :multipart, idempotent: false,
+          success_statuses: [200],
+          product: 'one_time_aml'
+        ),
+        aml_monitoring: Operation.new(
+          http_method: :post, path: '/v3/aml/monitoring', authenticated: true,
+          partner_id_header: false, body_kind: :multipart, idempotent: false,
+          success_statuses: [202],
+          product: 'aml'
+        ),
+        aml_monitoring_news: Operation.new(
+          http_method: :get, path: '/v3/aml/monitoring/{job_id}/news/{reference}',
+          authenticated: true, partner_id_header: false, body_kind: nil, idempotent: true,
+          success_statuses: [200],
+          product: 'aml'
         ),
         status: Operation.new(
           http_method: :get, path: '/v3/status/{job_id}', authenticated: true,
