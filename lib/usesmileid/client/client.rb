@@ -7,18 +7,12 @@ module SmileID
   # The Smile ID client (spec section 2.1, 4). Construct once, then call
   # resource verbs, e.g. client.enhanced_kyc.verify(...).
   class Client
-    # Mirrors the API authorizer: a token bound to a product is accepted only on
-    # that product's endpoint. Paths absent here mint a token with no claims.
-    PRODUCT_BY_PATH = {
-      '/v3/enhanced_kyc' => 'enhanced_kyc',
-      '/v3/document_verification' => 'document_verification',
-      '/v3/enhanced_document_verification' => 'enhanced_document_verification',
-      '/v3/residency_document_verification' => 'residency_document_verification',
-      '/v3/biometric_kyc' => 'biometric_kyc',
-      '/v3/registration' => 'smart_selfie_registration',
-      '/v3/authentication' => 'smart_selfie_authentication',
-      '/v3/compare' => 'smart_selfie_compare'
-    }.freeze
+    # Product claim by path, taken from the spec's x-smile-token-product via the
+    # generated operations table. Kept for compatibility; the client reads each
+    # operation's product directly.
+    PRODUCT_BY_PATH = Generated::Operations::OPS.values
+                                                .select(&:product)
+                                                .to_h { |op| [op.path, op.product] }.freeze
 
     attr_reader :config
 
@@ -57,6 +51,14 @@ module SmileID
       @users ||= Resources::Users.new(self)
     end
 
+    def aml
+      @aml ||= Resources::Aml.new(self)
+    end
+
+    def aml_monitoring
+      @aml_monitoring ||= Resources::AmlMonitoring.new(self)
+    end
+
     def services
       @services ||= Resources::Services.new(self)
     end
@@ -68,13 +70,13 @@ module SmileID
     #
     # @return [SmileID::Response] on a success status for the operation.
     def call(op_key, form: nil, path_params: {}, query: {}, user_id_header: nil, timeout: nil,
-             use_enrolled_image: false)
+             use_enrolled_image: false, extra_headers: nil)
       op = Generated::Operations.fetch(op_key)
       url = @config.base_url + interpolate(op.path, path_params)
       content_type, body = serialize(op, form)
       token = mint_token(op, form, user_id_header, use_enrolled_image, timeout) if op.authenticated
 
-      headers = build_headers(op, content_type, user_id_header, token)
+      headers = build_headers(op, content_type, user_id_header, token).merge(extra_headers || {})
       response = @transport.send_request(
         method: op.http_method, url: url, headers: headers, query: query || {},
         body: body, retryable: op.idempotent, timeout: timeout
@@ -106,7 +108,7 @@ module SmileID
     # (use_enrolled_image) authorises a captureless job for one user, so it must
     # never reach another call's token.
     def mint_token(op, form, user_id_header, use_enrolled_image, timeout)
-      product = PRODUCT_BY_PATH[op.path]
+      product = op.product
       user_id = job_user_id(form, user_id_header) if product
       if use_enrolled_image && user_id.nil?
         raise Errors::ValidationError.new('user_id is required when use_enrolled_image is true')

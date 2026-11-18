@@ -169,6 +169,59 @@ RSpec.describe 'token lifecycle' do
     end
   end
 
+  describe 'AML products' do
+    it 'lists the product of every AML path in PRODUCT_BY_PATH' do
+      expect(SmileID::Client::PRODUCT_BY_PATH).to include(
+        '/v3/aml' => 'one_time_aml', '/v3/aml/sync' => 'one_time_aml',
+        '/v3/aml/monitoring' => 'aml',
+        '/v3/aml/monitoring/{job_id}/news/{reference}' => 'aml'
+      )
+    end
+
+    let(:aml_args) do
+      { countries: ['NG'], full_name: 'Jane Doe', callback_url: 'https://example.com/cb', **person }
+    end
+
+    it 'binds the one_time_aml product and user_id into the /v3/aml token' do
+      _, claims = capture_token_claims
+      stub_accepted('aml')
+
+      client.aml.submit(**aml_args)
+
+      expect(claims).to eq([{ 'user_id' => 'user-1', 'product' => 'one_time_aml' }])
+    end
+
+    it 'binds the one_time_aml product and user_id into the /v3/aml/sync token' do
+      _, claims = capture_token_claims
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/aml/sync")
+        .to_return(status: 200, body: JSON.generate(status: 'clear'), headers: json_headers)
+
+      client.aml.submit_sync(**aml_args)
+
+      expect(claims).to eq([{ 'user_id' => 'user-1', 'product' => 'one_time_aml' }])
+    end
+
+    it 'binds the aml product and user_id into the /v3/aml/monitoring token' do
+      _, claims = capture_token_claims
+      stub_accepted('aml/monitoring')
+
+      client.aml_monitoring.submit(**aml_args)
+
+      expect(claims).to eq([{ 'user_id' => 'user-1', 'product' => 'aml' }])
+    end
+
+    it 'binds only the aml product into the news token' do
+      _, claims = capture_token_claims
+      stub_request(:get, "#{TestHelpers::SANDBOX}/v3/aml/monitoring/#{job_id}/news/ref_001")
+        .with(query: { 'news_category' => 'terrorism' })
+        .to_return(status: 200, body: JSON.generate(job_id: job_id), headers: json_headers)
+
+      client.aml_monitoring.news(job_id, 'ref_001', news_category: 'terrorism')
+
+      expect(claims).to eq([{ 'product' => 'aml' }])
+    end
+  end
+
   it 'binds only the product when the job has no user_id' do
     _, claims = capture_token_claims
     stub_accepted('enhanced_kyc')

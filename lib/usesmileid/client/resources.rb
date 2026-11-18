@@ -236,6 +236,110 @@ module SmileID
       end
     end
 
+    # POST /v3/aml and /v3/aml/sync
+    class Aml < Base
+      # Queues a One-Time AML screening. The result arrives on callback_url.
+      def submit(countries:, full_name:, user_details:, consent:, birth_year: nil,
+                 strict_match: nil, aliases: nil, search_existing_user: nil,
+                 callback_url: nil, partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
+        form = aml_form(
+          countries: countries, full_name: full_name, user_details: user_details,
+          consent: consent, birth_year: birth_year, strict_match: strict_match,
+          aliases: aliases, search_existing_user: search_existing_user,
+          callback_url: resolve_callback(callback_url), partner_params: partner_params,
+          metadata: metadata, user_id: user_id
+        )
+        accepted(@client.call(:one_time_aml, form: form, user_id_header: user_id, timeout: timeout))
+      end
+
+      # Runs the same screening and returns the terminal result in the response.
+      # callback_url is optional: no callback is sent, but a given one is kept
+      # for replay. Send the same idempotency_key on a retry to get the original
+      # result instead of a second, billed screening. A provider timeout raises
+      # SmileIDError with status_code 408; nothing is billed.
+      def submit_sync(countries:, full_name:, user_details:, consent:, birth_year: nil,
+                      strict_match: nil, aliases: nil, search_existing_user: nil,
+                      callback_url: nil, partner_params: nil, metadata: nil, user_id: nil,
+                      idempotency_key: nil, timeout: nil)
+        Config.validate_callback_url!(callback_url) if callback_url
+        form = aml_form(
+          countries: countries, full_name: full_name, user_details: user_details,
+          consent: consent, birth_year: birth_year, strict_match: strict_match,
+          aliases: aliases, search_existing_user: search_existing_user,
+          callback_url: callback_url, partner_params: partner_params,
+          metadata: metadata, user_id: user_id
+        )
+        extra_headers = idempotency_key ? { 'SmileID-Idempotency-Key' => idempotency_key } : nil
+        response = @client.call(:one_time_aml_sync, form: form, user_id_header: user_id,
+                                                    timeout: timeout, extra_headers: extra_headers)
+        Generated::Models::OneTimeAmlResult.from(response.json, response.headers)
+      end
+
+      private
+
+      def aml_form(countries:, full_name:, user_details:, consent:, birth_year:, strict_match:,
+                   aliases:, search_existing_user:, callback_url:, partner_params:, metadata:, user_id:)
+        {
+          'countries' => countries,
+          'full_name' => full_name,
+          'birth_year' => birth_year,
+          'strict_match' => strict_match,
+          'aliases' => aliases,
+          'search_existing_user' => search_existing_user,
+          'user_id' => user_id,
+          'user_details' => coerce_user_details(user_details),
+          'consent' => coerce_consent(consent),
+          'callback_url' => callback_url,
+          'partner_params' => partner_params,
+          'metadata' => metadata
+        }.compact
+      end
+    end
+
+    # POST /v3/aml/monitoring and GET /v3/aml/monitoring/{job_id}/news/{reference}
+    class AmlMonitoring < Base
+      NEWS_CATEGORIES = %w[
+        arms_trafficking credit_update environmental_crime financial_crime
+        human_rights_violation leadership_change legal_risk location_change narcotics
+        other other_crime ownership_change product_change regulatory sexual_crime
+        technology_event terrorism violent_crime
+      ].freeze
+
+      # full_name is required unless search_existing_user is true, which takes
+      # the name from the user's earlier KYC record and needs user_id.
+      def submit(countries:, user_details:, consent:, full_name: nil, birth_year: nil,
+                 strict_match: nil, aliases: nil, search_existing_user: nil,
+                 callback_url: nil, partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
+        form = {
+          'countries' => countries,
+          'full_name' => full_name,
+          'birth_year' => birth_year,
+          'strict_match' => strict_match,
+          'aliases' => aliases,
+          'search_existing_user' => search_existing_user,
+          'user_id' => user_id,
+          'user_details' => coerce_user_details(user_details),
+          'consent' => coerce_consent(consent),
+          'callback_url' => resolve_callback(callback_url),
+          'partner_params' => partner_params,
+          'metadata' => metadata
+        }.compact
+        accepted(@client.call(:aml_monitoring, form: form, user_id_header: user_id, timeout: timeout))
+      end
+
+      def news(job_id, reference, news_category:, page: nil, limit: nil, timeout: nil)
+        unless NEWS_CATEGORIES.include?(news_category.to_s)
+          raise Errors::ValidationError.new("news_category must be one of #{NEWS_CATEGORIES.join(', ')}")
+        end
+
+        query = { 'news_category' => news_category, 'page' => page, 'limit' => limit }.compact
+        response = @client.call(:aml_monitoring_news,
+                                path_params: { 'job_id' => job_id, 'reference' => reference },
+                                query: query, timeout: timeout)
+        Generated::Models::AmlMonitoringNewsResponse.from(response.json)
+      end
+    end
+
     # GET /v3/status, POST /v3/replay, plus the wait_until_complete poll helper.
     class Verifications < Base
       def retrieve(job_id, timeout: nil)

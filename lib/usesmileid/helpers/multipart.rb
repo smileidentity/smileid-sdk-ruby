@@ -19,7 +19,7 @@ module SmileID
     # item 4, the OpenAPI-Generator bug to avoid).
     module Multipart
       # Fields serialized as JSON parts.
-      JSON_PART_FIELDS = %w[consent user_details partner_params metadata].freeze
+      JSON_PART_FIELDS = %w[consent user_details partner_params metadata countries aliases].freeze
       # Single binary fields.
       BINARY_FIELDS = %w[selfie_image document document_back visa comparison_image].freeze
       # Repeated binary fields.
