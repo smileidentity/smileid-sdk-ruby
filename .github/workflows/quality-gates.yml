@@ -103,7 +103,9 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           pipx install diff-cover==11.0.1
-          if diff-cover coverage/coverage.xml --compare-branch="origin/$BASE_REF" --fail-under=100; then
+          # The gemspec loads version.rb before SimpleCov starts, so its lines
+          # never count as covered and every release PR would fail.
+          if diff-cover coverage/coverage.xml --compare-branch="origin/$BASE_REF" --fail-under=100 --exclude version.rb; then
             exit 0
           fi
           if [ "$BOT_PR" = "true" ]; then
