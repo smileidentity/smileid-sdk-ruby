@@ -169,6 +169,14 @@ RSpec.describe 'token lifecycle' do
     end
   end
 
+  it 'takes each product from the operation table, matching the job calls' do
+    expected = job_calls.to_h { |product, (path, _)| [path, product] }
+
+    expect(SmileID::Client::PRODUCT_BY_PATH).to include(expected)
+    unbound = SmileID::Generated::Operations::OPS.values.reject(&:product)
+    expect(unbound.map(&:path)).to include('/v3/status/{job_id}', '/v3/services/id_status')
+  end
+
   describe 'AML products' do
     it 'lists the product of every AML path in PRODUCT_BY_PATH' do
       expect(SmileID::Client::PRODUCT_BY_PATH).to include(
