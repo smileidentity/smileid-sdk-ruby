@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [13.1.0] - 2026-11-19
+
 ### Added
 
 - One-Time AML: `aml.submit` (async, result on the callback URL) and `aml.submit_sync` (result returned inline, with an optional `idempotency_key:`). The inline result is a `OneTimeAmlResult` that also carries the `SmileID-Job-ID`, `Response-Signature` and `Response-Timestamp` response headers.
@@ -75,7 +77,8 @@ First public release.
 - Typed errors under `SmileID::Errors`, keyed on HTTP status.
 - Bank codes, supported ID types and supported documents lookups.
 
-[Unreleased]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v13.0.0...HEAD
+[Unreleased]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v13.1.0...HEAD
+[13.1.0]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v13.0.0...v13.1.0
 [13.0.0]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v12.1.0...v13.0.0
 [12.1.0]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v12.0.0...v12.1.0
 [12.0.0]: https://github.com/smileidentity/smileid-sdk-ruby/releases/tag/v12.0.0
