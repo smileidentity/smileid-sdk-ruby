@@ -65,26 +65,28 @@ module SmileID
     # POST /v3/basic_kyc and /v3/basic_kyc/sync
     class BasicKyc < Base
       # Queues a Basic KYC verification. The result arrives on callback_url.
-      def submit(country:, id_type:, id_number:, user_details:, consent:,
+      def verify(country:, id_type:, id_number:, user_details:, consent:,
                  callback_url: nil, bank_code: nil, operator: nil,
-                 partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
+                 partner_params: nil, metadata: nil, timeout: nil)
         form = basic_kyc_form(
           country: country, id_type: id_type, id_number: id_number,
           user_details: user_details, consent: consent,
           callback_url: resolve_callback(callback_url), bank_code: bank_code,
           operator: operator, partner_params: partner_params, metadata: metadata
         )
-        accepted(@client.call(:basic_kyc, form: form, user_id_header: user_id, timeout: timeout))
+        accepted(@client.call(:basic_kyc, form: form, timeout: timeout))
       end
 
       # Runs the same verification and returns the result in the response.
-      # callback_url is optional and ignored by the API: no callback is sent.
-      # A verification that could not be completed raises SmileIDError with
-      # status_code 424, 408 or 500; read the outcome from
-      # verifications.retrieve with the job id rather than resubmitting.
-      def submit_sync(country:, id_type:, id_number:, user_details:, consent:,
+      # The API ignores callback_url here, so the client's default callback
+      # URL is never sent; a callback_url passed on the call is checked and
+      # sent as given. A verification that could not be completed raises
+      # SmileIDError with status_code 424, 408 or 500. The job may still have
+      # run, and resubmitting runs and bills a second lookup, so don't
+      # resubmit automatically.
+      def verify_sync(country:, id_type:, id_number:, user_details:, consent:,
                       callback_url: nil, bank_code: nil, operator: nil,
-                      partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
+                      partner_params: nil, metadata: nil, timeout: nil)
         Config.validate_callback_url!(callback_url) if callback_url
         form = basic_kyc_form(
           country: country, id_type: id_type, id_number: id_number,
@@ -92,7 +94,7 @@ module SmileID
           bank_code: bank_code, operator: operator, partner_params: partner_params,
           metadata: metadata
         )
-        response = @client.call(:basic_kyc_sync, form: form, user_id_header: user_id, timeout: timeout)
+        response = @client.call(:basic_kyc_sync, form: form, timeout: timeout)
         Generated::Models::BasicKycResult.from(response.json, response.headers)
       end
 

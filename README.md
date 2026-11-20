@@ -112,10 +112,10 @@ accepted.accepted?  # => true
 
 ### Basic KYC
 
-Basic KYC checks the details you submit against the ID authority's record and reports a match verdict per field. It never returns the record itself. `basic_kyc.submit` takes the same arguments as Enhanced KYC and sends the result to your callback URL:
+Basic KYC checks the details you submit against the ID authority's record and reports a match verdict per field. It never returns the record itself. `basic_kyc.verify` takes the same arguments as Enhanced KYC, apart from `user_id`, and sends the result to your callback URL:
 
 ```ruby
-accepted = smile.basic_kyc.submit(
+accepted = smile.basic_kyc.verify(
   country: "NG",
   id_type: "NIN",
   id_number: "12345678901",
@@ -125,10 +125,10 @@ accepted = smile.basic_kyc.submit(
 )
 ```
 
-`basic_kyc.submit_sync` returns the result in the response, so `callback_url` is optional and no callback is sent. If the verification can't be completed, it raises `SmileID::Errors::SmileIDError` with `status_code` 424, 408 or 500. The job is still recorded, so read its outcome with `smile.verifications.retrieve(job_id)` instead of resubmitting.
+`basic_kyc.verify_sync` returns the result in the response. The API ignores `callback_url` on this call, so the client's `default_callback_url` isn't sent. If the verification can't be completed, it raises `SmileID::Errors::SmileIDError` with `status_code` 424, 408 or 500. The job may still have run, and resubmitting runs and bills a second lookup, so don't resubmit automatically.
 
 ```ruby
-result = smile.basic_kyc.submit_sync(
+result = smile.basic_kyc.verify_sync(
   country: "NG", id_type: "NIN", id_number: "12345678901",
   user_details: user_details, consent: consent
 )

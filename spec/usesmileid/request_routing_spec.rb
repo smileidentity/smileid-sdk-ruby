@@ -53,8 +53,8 @@ RSpec.describe 'request routing' do
     end
   end
 
-  describe 'basic_kyc.submit' do
-    it 'sends the golden multipart shape with User-ID header and no Partner-ID header' do
+  describe 'basic_kyc.verify' do
+    it 'sends the golden multipart shape with no User-ID or Partner-ID header' do
       captured = nil
       stub_request(:post, "#{TestHelpers::SANDBOX}/v3/basic_kyc")
         .to_return do |request|
@@ -62,15 +62,15 @@ RSpec.describe 'request routing' do
           { status: 202, body: accepted_body, headers: { 'Content-Type' => 'application/json' } }
         end
 
-      response = client.basic_kyc.submit(
+      response = client.basic_kyc.verify(
         country: 'NG', id_type: 'NIN', id_number: '12345678901',
         callback_url: 'https://example.com/cb', bank_code: '044', operator: 'MTN',
         partner_params: { order_id: 'ORD-1' }, metadata: [{ name: 'k', value: 'v' }],
-        user_id: 'user_01h8x9y2z3a4b5c6d7e8f9g0h1', **entry_args
+        **entry_args
       )
 
       expect(captured.headers['Smileid-Token']).to eq(jwt)
-      expect(captured.headers['User-Id']).to eq('user_01h8x9y2z3a4b5c6d7e8f9g0h1')
+      expect(captured.headers['User-Id']).to be_nil
       expect(captured.headers['Smileid-Partner-Id']).to be_nil
       expect(captured.headers['Content-Type']).to start_with('multipart/form-data; boundary=')
 
@@ -81,6 +81,11 @@ RSpec.describe 'request routing' do
       expect(body).to include("name=\"callback_url\"\r\n\r\nhttps://example.com/cb\r\n")
       expect(body).to include("name=\"bank_code\"\r\n\r\n044\r\n")
       expect(body).to include("name=\"operator\"\r\n\r\nMTN\r\n")
+      expect(body).to include("name=\"partner_params\"\r\nContent-Type: application/json\r\n\r\n" \
+                              '{"order_id":"ORD-1"}')
+      expect(body).to include("name=\"metadata\"\r\nContent-Type: application/json\r\n\r\n" \
+                              '[{"name":"k","value":"v"}]')
+      expect(body).not_to include('name="user_id"')
       expect(body).to include("name=\"user_details\"\r\nContent-Type: application/json\r\n\r\n" \
                               '{"given_names":"John","last_name":"Doe","email":"john@example.com"}')
       expect(body).to include("name=\"consent\"\r\nContent-Type: application/json\r\n\r\n" \
@@ -94,13 +99,13 @@ RSpec.describe 'request routing' do
 
     it 'rejects a non-https callback URL before sending' do
       expect do
-        client.basic_kyc.submit(country: 'NG', id_type: 'NIN', id_number: '1',
+        client.basic_kyc.verify(country: 'NG', id_type: 'NIN', id_number: '1',
                                 callback_url: 'http://example.com/cb', **entry_args)
       end.to raise_error(SmileID::Errors::ValidationError)
     end
   end
 
-  describe 'basic_kyc.submit_sync' do
+  describe 'basic_kyc.verify_sync' do
     let(:kyc_args) { { country: 'NG', id_type: 'NIN', id_number: '12345678901', **entry_args } }
     let(:result_body) do
       JSON.generate(
@@ -133,11 +138,10 @@ RSpec.describe 'request routing' do
                        'Response-Timestamp' => '2026-03-10T12:00:04.000Z' } }
         end
 
-      result = client.basic_kyc.submit_sync(**kyc_args, user_id: 'user-1234',
-                                                        callback_url: 'https://example.com/cb')
+      result = client.basic_kyc.verify_sync(**kyc_args, callback_url: 'https://example.com/cb')
 
       expect(captured.headers['Smileid-Token']).to eq(jwt)
-      expect(captured.headers['User-Id']).to eq('user-1234')
+      expect(captured.headers['User-Id']).to be_nil
       expect(captured.headers['Smileid-Partner-Id']).to be_nil
       body = captured.body.dup.force_encoding('UTF-8')
       expect(body).to include("name=\"country\"\r\n\r\nNG\r\n")
@@ -163,7 +167,7 @@ RSpec.describe 'request routing' do
       expect(result.raw['status']).to eq('attention')
     end
 
-    it 'sends no callback_url when none is given' do
+    it 'sends no callback_url when none is given, even with a default configured' do
       captured = nil
       stub_request(:post, "#{TestHelpers::SANDBOX}/v3/basic_kyc/sync")
         .to_return do |request|
@@ -171,9 +175,32 @@ RSpec.describe 'request routing' do
           { status: 200, body: result_body, headers: { 'Content-Type' => 'application/json' } }
         end
 
-      result = client.basic_kyc.submit_sync(**kyc_args)
+      result = build_client(default_callback_url: 'https://example.com/default')
+               .basic_kyc.verify_sync(**kyc_args)
       expect(captured.body.dup.force_encoding('UTF-8')).not_to include('name="callback_url"')
       expect(result.job_id).to be_nil
+    end
+
+    it 'parses a result with no match_results' do
+      body = JSON.parse(result_body).merge('status' => 'error', 'match_results' => nil)
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/basic_kyc/sync")
+        .to_return(status: 200, body: JSON.generate(body),
+                   headers: { 'Content-Type' => 'application/json' })
+
+      result = client.basic_kyc.verify_sync(**kyc_args)
+      expect(result.status).to eq('error')
+      expect(result.match_results).to be_nil
+    end
+
+    it 'raises an APIError for a 500 without retrying, though a 500 is retryable' do
+      stub = stub_request(:post, "#{TestHelpers::SANDBOX}/v3/basic_kyc/sync")
+             .to_return(status: 500,
+                        body: JSON.generate(status: 'Failed', message: 'Internal error.'),
+                        headers: { 'Content-Type' => 'application/json' })
+
+      expect { client.basic_kyc.verify_sync(**kyc_args) }
+        .to raise_error(SmileID::Errors::APIError) { |error| expect(error.status_code).to eq(500) }
+      expect(stub).to have_been_requested.once
     end
 
     [408, 424].each do |code|
@@ -183,7 +210,7 @@ RSpec.describe 'request routing' do
                           body: JSON.generate(status: 'Failed', message: 'ID authority unavailable.'),
                           headers: { 'Content-Type' => 'application/json' })
 
-        expect { client.basic_kyc.submit_sync(**kyc_args) }
+        expect { client.basic_kyc.verify_sync(**kyc_args) }
           .to raise_error(SmileID::Errors::SmileIDError) { |error|
             expect(error.status_code).to eq(code)
             expect(error.message).to eq('ID authority unavailable.')
@@ -193,7 +220,7 @@ RSpec.describe 'request routing' do
     end
 
     it 'rejects a non-https callback URL before sending' do
-      expect { client.basic_kyc.submit_sync(**kyc_args, callback_url: 'http://example.com/cb') }
+      expect { client.basic_kyc.verify_sync(**kyc_args, callback_url: 'http://example.com/cb') }
         .to raise_error(SmileID::Errors::ValidationError)
     end
   end
