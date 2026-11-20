@@ -31,6 +31,10 @@ module SmileID
       @enhanced_kyc ||= Resources::EnhancedKyc.new(self)
     end
 
+    def basic_kyc
+      @basic_kyc ||= Resources::BasicKyc.new(self)
+    end
+
     def documents
       @documents ||= Resources::Documents.new(self)
     end

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Basic KYC: `basic_kyc.submit` (async, result on the callback URL) and `basic_kyc.submit_sync` (result returned inline). The inline result is a `BasicKycResult` with a verdict per field in `match_results`, and it carries the `SmileID-Job-ID`, `Response-Signature` and `Response-Timestamp` response headers. Both operations mint their token with the `basic_kyc` product claim.
 - One-Time AML: `aml.submit` (async, result on the callback URL) and `aml.submit_sync` (result returned inline, with an optional `idempotency_key:`). The inline result is a `OneTimeAmlResult` that also carries the `SmileID-Job-ID`, `Response-Signature` and `Response-Timestamp` response headers.
 - AML Monitoring: `aml_monitoring.submit` and `aml_monitoring.news`, which reads the news articles for one person in a monitoring result.
 - `countries` and `aliases` are sent as JSON multipart parts, as the AML endpoints require.

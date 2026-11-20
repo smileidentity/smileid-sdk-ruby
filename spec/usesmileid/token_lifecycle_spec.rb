@@ -209,6 +209,25 @@ RSpec.describe 'token lifecycle' do
       expect(claims).to eq([{ 'user_id' => 'user-1', 'product' => 'one_time_aml' }])
     end
 
+    it 'binds the basic_kyc product and user_id into the /v3/basic_kyc token' do
+      _, claims = capture_token_claims
+      stub_accepted('basic_kyc')
+
+      client.basic_kyc.submit(**kyc_id, **person)
+
+      expect(claims).to eq([{ 'user_id' => 'user-1', 'product' => 'basic_kyc' }])
+    end
+
+    it 'binds the basic_kyc product and user_id into the /v3/basic_kyc/sync token' do
+      _, claims = capture_token_claims
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/basic_kyc/sync")
+        .to_return(status: 200, body: JSON.generate(status: 'clear'), headers: json_headers)
+
+      client.basic_kyc.submit_sync(**kyc_id, **person)
+
+      expect(claims).to eq([{ 'user_id' => 'user-1', 'product' => 'basic_kyc' }])
+    end
+
     it 'binds the aml product and user_id into the /v3/aml/monitoring token' do
       _, claims = capture_token_claims
       stub_accepted('aml/monitoring')

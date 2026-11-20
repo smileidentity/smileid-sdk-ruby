@@ -20,6 +20,7 @@ class SmileID::Generated::Models::AcceptedStatusResponse < Object
 class SmileID::Generated::Models::AmlMonitoringNewsItem < Object
 class SmileID::Generated::Models::AmlMonitoringNewsResponse < Object
 class SmileID::Generated::Models::BankCodesResponse < Object
+class SmileID::Generated::Models::BasicKycResult < Object
 class SmileID::Generated::Models::IdStatusResponse < Object
 class SmileID::Generated::Models::JobStatus < Object
 class SmileID::Generated::Models::OneTimeAmlResult < Object
@@ -29,6 +30,7 @@ class SmileID::Generated::Operations::Operation < Struct
 class SmileID::Resources::Aml < SmileID::Resources::Base
 class SmileID::Resources::AmlMonitoring < SmileID::Resources::Base
 class SmileID::Resources::Base < Object
+class SmileID::Resources::BasicKyc < SmileID::Resources::Base
 class SmileID::Resources::Biometric < SmileID::Resources::Base
 class SmileID::Resources::BiometricKyc < SmileID::Resources::Base
 class SmileID::Resources::Documents < SmileID::Resources::Base
@@ -67,6 +69,7 @@ constant SmileID::UserDetails::PHONE_NUMBER: Regexp
 constant SmileID::VERSION: String
 method SmileID::Client#aml()
 method SmileID::Client#aml_monitoring()
+method SmileID::Client#basic_kyc()
 method SmileID::Client#biometric()
 method SmileID::Client#biometric_kyc()
 method SmileID::Client#call(op_key, form: ?, path_params: ?, query: ?, user_id_header: ?, timeout: ?, use_enrolled_image: ?, extra_headers: ?)
@@ -159,6 +162,26 @@ method SmileID::Generated::Models::BankCodesResponse#bank_codes()
 method SmileID::Generated::Models::BankCodesResponse#raw()
 method SmileID::Generated::Models::BankCodesResponse.from(hash)
 method SmileID::Generated::Models::BankCodesResponse.new(bank_codes:, raw: ?)
+method SmileID::Generated::Models::BasicKycResult#antifraud()
+method SmileID::Generated::Models::BasicKycResult#completed_at()
+method SmileID::Generated::Models::BasicKycResult#consent()
+method SmileID::Generated::Models::BasicKycResult#created_at()
+method SmileID::Generated::Models::BasicKycResult#device_signals()
+method SmileID::Generated::Models::BasicKycResult#job_id()
+method SmileID::Generated::Models::BasicKycResult#kyc_receipt()
+method SmileID::Generated::Models::BasicKycResult#match_results()
+method SmileID::Generated::Models::BasicKycResult#message()
+method SmileID::Generated::Models::BasicKycResult#partner_params()
+method SmileID::Generated::Models::BasicKycResult#product()
+method SmileID::Generated::Models::BasicKycResult#raw()
+method SmileID::Generated::Models::BasicKycResult#reason()
+method SmileID::Generated::Models::BasicKycResult#response_signature()
+method SmileID::Generated::Models::BasicKycResult#response_timestamp()
+method SmileID::Generated::Models::BasicKycResult#status()
+method SmileID::Generated::Models::BasicKycResult#user_id()
+method SmileID::Generated::Models::BasicKycResult#user_provided_info()
+method SmileID::Generated::Models::BasicKycResult.from(hash, headers = ?)
+method SmileID::Generated::Models::BasicKycResult.new(hash, headers = ?)
 method SmileID::Generated::Models::IdStatusResponse#last_check_status()
 method SmileID::Generated::Models::IdStatusResponse#last_check_success_rate()
 method SmileID::Generated::Models::IdStatusResponse#last_checked()
@@ -250,6 +273,9 @@ method SmileID::Resources::AmlMonitoring#news(job_id, reference, news_category:,
 method SmileID::Resources::AmlMonitoring#submit(countries:, user_details:, consent:, full_name: ?, birth_year: ?, strict_match: ?, aliases: ?, search_existing_user: ?, callback_url: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
 method SmileID::Resources::AmlMonitoring.new(client)
 method SmileID::Resources::Base.new(client)
+method SmileID::Resources::BasicKyc#submit(country:, id_type:, id_number:, user_details:, consent:, callback_url: ?, bank_code: ?, operator: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
+method SmileID::Resources::BasicKyc#submit_sync(country:, id_type:, id_number:, user_details:, consent:, callback_url: ?, bank_code: ?, operator: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
+method SmileID::Resources::BasicKyc.new(client)
 method SmileID::Resources::Biometric#authenticate(user_id:, consent:, user_details:, selfie_image:, liveness_images:, callback_url: ?, sandbox_result: ?, partner_params: ?, metadata: ?, timeout: ?)
 method SmileID::Resources::Biometric#compare(selfie_image:, comparison_image:, comparison_image_type:, consent:, user_details:, liveness_images: ?, allow_new_enroll: ?, user_id: ?, callback_url: ?, sandbox_result: ?, partner_params: ?, metadata: ?, timeout: ?)
 method SmileID::Resources::Biometric#enroll(selfie_image:, liveness_images:, consent:, user_details:, allow_new_enroll: ?, callback_url: ?, sandbox_result: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)

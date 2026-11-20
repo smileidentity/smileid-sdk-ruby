@@ -62,6 +62,59 @@ module SmileID
       end
     end
 
+    # POST /v3/basic_kyc and /v3/basic_kyc/sync
+    class BasicKyc < Base
+      # Queues a Basic KYC verification. The result arrives on callback_url.
+      def submit(country:, id_type:, id_number:, user_details:, consent:,
+                 callback_url: nil, bank_code: nil, operator: nil,
+                 partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
+        form = basic_kyc_form(
+          country: country, id_type: id_type, id_number: id_number,
+          user_details: user_details, consent: consent,
+          callback_url: resolve_callback(callback_url), bank_code: bank_code,
+          operator: operator, partner_params: partner_params, metadata: metadata
+        )
+        accepted(@client.call(:basic_kyc, form: form, user_id_header: user_id, timeout: timeout))
+      end
+
+      # Runs the same verification and returns the result in the response.
+      # callback_url is optional and ignored by the API: no callback is sent.
+      # A verification that could not be completed raises SmileIDError with
+      # status_code 424, 408 or 500; read the outcome from
+      # verifications.retrieve with the job id rather than resubmitting.
+      def submit_sync(country:, id_type:, id_number:, user_details:, consent:,
+                      callback_url: nil, bank_code: nil, operator: nil,
+                      partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
+        Config.validate_callback_url!(callback_url) if callback_url
+        form = basic_kyc_form(
+          country: country, id_type: id_type, id_number: id_number,
+          user_details: user_details, consent: consent, callback_url: callback_url,
+          bank_code: bank_code, operator: operator, partner_params: partner_params,
+          metadata: metadata
+        )
+        response = @client.call(:basic_kyc_sync, form: form, user_id_header: user_id, timeout: timeout)
+        Generated::Models::BasicKycResult.from(response.json, response.headers)
+      end
+
+      private
+
+      def basic_kyc_form(country:, id_type:, id_number:, user_details:, consent:, callback_url:,
+                         bank_code:, operator:, partner_params:, metadata:)
+        {
+          'country' => country,
+          'id_type' => id_type,
+          'id_number' => id_number,
+          'user_details' => coerce_user_details(user_details),
+          'consent' => coerce_consent(consent),
+          'callback_url' => callback_url,
+          'bank_code' => bank_code,
+          'operator' => operator,
+          'partner_params' => partner_params,
+          'metadata' => metadata
+        }.compact
+      end
+    end
+
     # POST /v3/document_verification, /v3/enhanced_document_verification and
     # /v3/residency_document_verification
     class Documents < Base

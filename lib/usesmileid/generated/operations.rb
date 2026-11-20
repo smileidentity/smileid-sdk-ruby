@@ -25,6 +25,18 @@ module SmileID
           success_statuses: [202],
           product: 'enhanced_kyc'
         ),
+        basic_kyc: Operation.new(
+          http_method: :post, path: '/v3/basic_kyc', authenticated: true,
+          partner_id_header: false, body_kind: :multipart, idempotent: false,
+          success_statuses: [202],
+          product: 'basic_kyc'
+        ),
+        basic_kyc_sync: Operation.new(
+          http_method: :post, path: '/v3/basic_kyc/sync', authenticated: true,
+          partner_id_header: false, body_kind: :multipart, idempotent: false,
+          success_statuses: [200],
+          product: 'basic_kyc'
+        ),
         document_verification: Operation.new(
           http_method: :post, path: '/v3/document_verification', authenticated: true,
           partner_id_header: true, body_kind: :multipart, idempotent: false,
