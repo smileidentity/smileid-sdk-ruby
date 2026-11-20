@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    usesmileid (13.0.0)
+    usesmileid (13.1.0)
       faraday (~> 2.0)
       faraday-multipart (~> 1.0)
 
