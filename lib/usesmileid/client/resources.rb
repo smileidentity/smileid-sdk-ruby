@@ -41,24 +41,60 @@ module SmileID
       end
     end
 
-    # POST /v3/enhanced_kyc
+    # POST /v3/enhanced_kyc and /v3/enhanced_kyc/sync
     class EnhancedKyc < Base
+      # Queues an Enhanced KYC verification. The result arrives on callback_url.
       def verify(country:, id_type:, id_number:, user_details:, consent:,
                  callback_url: nil, bank_code: nil, operator: nil,
                  partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
-        form = {
+        form = enhanced_kyc_form(
+          country: country, id_type: id_type, id_number: id_number,
+          user_details: user_details, consent: consent,
+          callback_url: resolve_callback(callback_url), bank_code: bank_code,
+          operator: operator, partner_params: partner_params, metadata: metadata
+        )
+        accepted(@client.call(:enhanced_kyc, form: form, user_id_header: user_id, timeout: timeout))
+      end
+
+      # Runs the same verification and returns the result in the response.
+      # The API ignores callback_url here, so the client's default callback
+      # URL is never sent; a callback_url passed on the call is checked and
+      # sent as given. A verification that could not be completed raises
+      # SmileIDError with status_code 424, 408 or 500. The job may still have
+      # run, and resubmitting runs and bills a second lookup, so don't
+      # resubmit automatically: read the outcome with
+      # verifications.retrieve(error.job_id). A 500 with no job_id means the
+      # job was not created.
+      def verify_sync(country:, id_type:, id_number:, user_details:, consent:,
+                      callback_url: nil, bank_code: nil, operator: nil,
+                      partner_params: nil, metadata: nil, user_id: nil, timeout: nil)
+        Config.validate_callback_url!(callback_url) if callback_url
+        form = enhanced_kyc_form(
+          country: country, id_type: id_type, id_number: id_number,
+          user_details: user_details, consent: consent, callback_url: callback_url,
+          bank_code: bank_code, operator: operator, partner_params: partner_params,
+          metadata: metadata
+        )
+        response = @client.call(:enhanced_kyc_sync, form: form, user_id_header: user_id, timeout: timeout)
+        Generated::Models::EnhancedKycResult.from(response.json, response.headers)
+      end
+
+      private
+
+      def enhanced_kyc_form(country:, id_type:, id_number:, user_details:, consent:, callback_url:,
+                            bank_code:, operator:, partner_params:, metadata:)
+        {
           'country' => country,
           'id_type' => id_type,
           'id_number' => id_number,
           'user_details' => coerce_user_details(user_details),
           'consent' => coerce_consent(consent),
-          'callback_url' => resolve_callback(callback_url),
+          'callback_url' => callback_url,
           'bank_code' => bank_code,
           'operator' => operator,
           'partner_params' => partner_params,
           'metadata' => metadata
         }.compact
-        accepted(@client.call(:enhanced_kyc, form: form, user_id_header: user_id, timeout: timeout))
       end
     end
 

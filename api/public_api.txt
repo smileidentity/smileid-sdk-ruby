@@ -21,6 +21,7 @@ class SmileID::Generated::Models::AmlMonitoringNewsItem < Object
 class SmileID::Generated::Models::AmlMonitoringNewsResponse < Object
 class SmileID::Generated::Models::BankCodesResponse < Object
 class SmileID::Generated::Models::BasicKycResult < Object
+class SmileID::Generated::Models::EnhancedKycResult < Object
 class SmileID::Generated::Models::IdStatusResponse < Object
 class SmileID::Generated::Models::JobStatus < Object
 class SmileID::Generated::Models::OneTimeAmlResult < Object
@@ -186,6 +187,25 @@ method SmileID::Generated::Models::BasicKycResult#user_id()
 method SmileID::Generated::Models::BasicKycResult#user_provided_info()
 method SmileID::Generated::Models::BasicKycResult.from(hash, headers = ?)
 method SmileID::Generated::Models::BasicKycResult.new(hash, headers = ?)
+method SmileID::Generated::Models::EnhancedKycResult#antifraud()
+method SmileID::Generated::Models::EnhancedKycResult#completed_at()
+method SmileID::Generated::Models::EnhancedKycResult#consent()
+method SmileID::Generated::Models::EnhancedKycResult#created_at()
+method SmileID::Generated::Models::EnhancedKycResult#device_signals()
+method SmileID::Generated::Models::EnhancedKycResult#job_id()
+method SmileID::Generated::Models::EnhancedKycResult#kyc_receipt()
+method SmileID::Generated::Models::EnhancedKycResult#message()
+method SmileID::Generated::Models::EnhancedKycResult#partner_params()
+method SmileID::Generated::Models::EnhancedKycResult#product()
+method SmileID::Generated::Models::EnhancedKycResult#raw()
+method SmileID::Generated::Models::EnhancedKycResult#reason()
+method SmileID::Generated::Models::EnhancedKycResult#response_signature()
+method SmileID::Generated::Models::EnhancedKycResult#response_timestamp()
+method SmileID::Generated::Models::EnhancedKycResult#status()
+method SmileID::Generated::Models::EnhancedKycResult#user_id()
+method SmileID::Generated::Models::EnhancedKycResult#user_provided_info()
+method SmileID::Generated::Models::EnhancedKycResult.from(hash, headers = ?)
+method SmileID::Generated::Models::EnhancedKycResult.new(hash, headers = ?)
 method SmileID::Generated::Models::IdStatusResponse#last_check_status()
 method SmileID::Generated::Models::IdStatusResponse#last_check_success_rate()
 method SmileID::Generated::Models::IdStatusResponse#last_checked()
@@ -291,6 +311,7 @@ method SmileID::Resources::Documents#verify_enhanced(id_type:, selfie_image:, li
 method SmileID::Resources::Documents#verify_residency(selfie_image:, liveness_images:, document:, visa:, consent:, country:, user_details:, id_type: ?, document_back: ?, callback_url: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
 method SmileID::Resources::Documents.new(client)
 method SmileID::Resources::EnhancedKyc#verify(country:, id_type:, id_number:, user_details:, consent:, callback_url: ?, bank_code: ?, operator: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
+method SmileID::Resources::EnhancedKyc#verify_sync(country:, id_type:, id_number:, user_details:, consent:, callback_url: ?, bank_code: ?, operator: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
 method SmileID::Resources::EnhancedKyc.new(client)
 method SmileID::Resources::Services#bank_codes(country: ?, timeout: ?)
 method SmileID::Resources::Services#id_status(country:, id_type:, timeout: ?)
