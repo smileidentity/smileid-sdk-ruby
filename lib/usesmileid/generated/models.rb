@@ -134,10 +134,10 @@ module SmileID
           @consent = hash['consent']
           @antifraud = hash['antifraud']
           @device_signals = hash['device_signals']
-          @job_id = headers['smileid-job-id']
-          @user_id = headers['user-id']
-          @response_signature = headers['response-signature']
-          @response_timestamp = headers['response-timestamp']
+          @job_id = Errors.job_id_from(headers)
+          @user_id = Errors.header_value(headers, 'user-id')
+          @response_signature = Errors.header_value(headers, 'response-signature')
+          @response_timestamp = Errors.header_value(headers, 'response-timestamp')
           @raw = hash
         end
 
@@ -176,10 +176,10 @@ module SmileID
           @antifraud = hash['antifraud']
           @device_signals = hash['device_signals']
           @kyc_receipt = hash['kyc_receipt']
-          @job_id = headers['smileid-job-id']
-          @user_id = headers['user-id']
-          @response_signature = headers['response-signature']
-          @response_timestamp = headers['response-timestamp']
+          @job_id = Errors.job_id_from(headers)
+          @user_id = Errors.header_value(headers, 'user-id')
+          @response_signature = Errors.header_value(headers, 'response-signature')
+          @response_timestamp = Errors.header_value(headers, 'response-timestamp')
           @raw = hash
         end
 

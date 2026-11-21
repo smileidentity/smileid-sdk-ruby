@@ -83,7 +83,9 @@ module SmileID
       # sent as given. A verification that could not be completed raises
       # SmileIDError with status_code 424, 408 or 500. The job may still have
       # run, and resubmitting runs and bills a second lookup, so don't
-      # resubmit automatically.
+      # resubmit automatically: read the outcome with
+      # verifications.retrieve(error.job_id). A 500 with no job_id means the
+      # job was not created.
       def verify_sync(country:, id_type:, id_number:, user_details:, consent:,
                       callback_url: nil, bank_code: nil, operator: nil,
                       partner_params: nil, metadata: nil, timeout: nil)
@@ -311,7 +313,9 @@ module SmileID
       # callback_url is optional: no callback is sent, but a given one is kept
       # for replay. Send the same idempotency_key on a retry to get the original
       # result instead of a second, billed screening. A provider timeout raises
-      # SmileIDError with status_code 408; nothing is billed.
+      # SmileIDError with status_code 408; nothing is billed and the job is
+      # final in `error`, so resubmit rather than poll. A 500 with a job_id
+      # can be read with verifications.retrieve(error.job_id).
       def submit_sync(countries:, full_name:, user_details:, consent:, birth_year: nil,
                       strict_match: nil, aliases: nil, search_existing_user: nil,
                       callback_url: nil, partner_params: nil, metadata: nil, user_id: nil,
