@@ -188,6 +188,55 @@ module SmileID
         end
       end
 
+      # Result of an Enhanced KYC verification: the body of
+      # POST /v3/enhanced_kyc/sync, which is the payload the async callback
+      # would have delivered. `status` is `clear`, `block`, `attention` or
+      # `error`. The spec documents only the fields every callback shares, so
+      # those are read here; anything else the ID authority returned is in
+      # `raw`. `job_id` and `user_id` come from the SmileID-Job-ID and User-ID
+      # headers, or from the body when a header is absent or blank.
+      # `response_signature` and `response_timestamp` are the
+      # Response-Signature and Response-Timestamp headers, or nil.
+      class EnhancedKycResult
+        attr_reader :status, :message, :reason, :created_at, :completed_at, :product,
+                    :partner_params, :user_provided_info, :consent, :antifraud,
+                    :device_signals, :kyc_receipt,
+                    :job_id, :user_id, :response_signature, :response_timestamp, :raw
+
+        def initialize(hash, headers = {})
+          @status = hash['status']
+          @message = hash['message']
+          @reason = hash['reason']
+          @created_at = hash['created_at']
+          @completed_at = hash['completed_at']
+          @product = hash['product']
+          @partner_params = hash['partner_params']
+          @user_provided_info = hash['user_provided_info']
+          @consent = hash['consent']
+          @antifraud = hash['antifraud']
+          @device_signals = hash['device_signals']
+          @kyc_receipt = hash['kyc_receipt']
+          @job_id = Errors.job_id_from(headers) || hash['job_id']
+          @user_id = header_text(headers, 'user-id') || hash['user_id']
+          @response_signature = Errors.header_value(headers, 'response-signature')
+          @response_timestamp = Errors.header_value(headers, 'response-timestamp')
+          @raw = hash
+        end
+
+        def self.from(hash, headers = {})
+          new(hash, headers)
+        end
+
+        private
+
+        # A response header's value with surrounding whitespace removed, or
+        # nil when it is absent or blank.
+        def header_text(headers, name)
+          value = Errors.header_value(headers, name).to_s.strip
+          value.empty? ? nil : value
+        end
+      end
+
       # One article in an AML Monitoring news response.
       class AmlMonitoringNewsItem
         attr_reader :body, :published_date, :publisher, :publisher_country_code,

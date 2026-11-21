@@ -209,6 +209,16 @@ RSpec.describe 'token lifecycle' do
       expect(claims).to eq([{ 'user_id' => 'user-1', 'product' => 'one_time_aml' }])
     end
 
+    it 'binds the enhanced_kyc product and user_id into the /v3/enhanced_kyc/sync token' do
+      _, claims = capture_token_claims
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/enhanced_kyc/sync")
+        .to_return(status: 200, body: JSON.generate(status: 'clear'), headers: json_headers)
+
+      client.enhanced_kyc.verify_sync(**kyc_id, **person)
+
+      expect(claims).to eq([{ 'user_id' => 'user-1', 'product' => 'enhanced_kyc' }])
+    end
+
     # The spec gives Basic KYC no user_id, so its token binds only the product.
     it 'binds only the basic_kyc product into the /v3/basic_kyc token' do
       _, claims = capture_token_claims

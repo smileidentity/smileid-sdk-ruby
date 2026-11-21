@@ -110,6 +110,29 @@ accepted.job_id     # => "job_..."
 accepted.accepted?  # => true
 ```
 
+`enhanced_kyc.verify_sync` takes the same arguments but returns the result in the response. The API ignores `callback_url` on this call, so the client's `default_callback_url` isn't sent. The result carries the `Response-Signature` and `Response-Timestamp` headers as `response_signature` and `response_timestamp`, so you can check them with your own webhook signature verification code. The SDK doesn't verify them. If the verification can't be completed, it raises `SmileID::Errors::SmileIDError` with `status_code` 424, 408 or 500. The job may still have run, and resubmitting runs and bills a second lookup, so don't resubmit automatically. On a 408 or 424 the job is recorded: read its outcome with `verifications.retrieve(error.job_id)`. Do the same for a 500 that has a `job_id`. A 500 with no `job_id` means the job wasn't created.
+
+```ruby
+result = smile.enhanced_kyc.verify_sync(
+  country: "NG", id_type: "NIN", id_number: "12345678901",
+  user_details: user_details, consent: consent
+)
+result.status   # => "clear", "block", "attention" or "error"
+result.raw      # the full callback payload, including the ID authority's record
+result.job_id   # from the SmileID-Job-ID header, else the body's job_id
+```
+
+```ruby
+begin
+  result = smile.enhanced_kyc.verify_sync(...)
+rescue SmileID::Errors::SmileIDError => e
+  # Only a 408, 424 or 500 that names a job has an outcome to read.
+  raise unless [408, 424, 500].include?(e.status_code) && e.job_id
+
+  status = smile.verifications.retrieve(e.job_id)  # don't resubmit
+end
+```
+
 ### Basic KYC
 
 Basic KYC checks the details you submit against the ID authority's record and reports a match verdict per field. It never returns the record itself. `basic_kyc.verify` takes the same arguments as Enhanced KYC, apart from `user_id`, and sends the result to your callback URL:
