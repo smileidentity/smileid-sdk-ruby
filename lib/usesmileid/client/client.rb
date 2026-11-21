@@ -149,7 +149,8 @@ module SmileID
           'token endpoint returned no token',
           status_code: response.status,
           request_id: Errors.request_id_from(response.headers),
-          raw_body: response.raw_body
+          raw_body: response.raw_body,
+          job_id: Errors.job_id_from(response.headers)
         )
       end
 
@@ -187,7 +188,8 @@ module SmileID
           'expected a JSON object response body',
           status_code: response.status,
           request_id: Errors.request_id_from(response.headers),
-          raw_body: response.raw_body
+          raw_body: response.raw_body,
+          job_id: Errors.job_id_from(response.headers)
         )
       end
 

@@ -21,15 +21,20 @@ module SmileID
       attr_reader :request_id
       # The unparsed response body.
       attr_reader :raw_body
+      # The Smile job id from the SmileID-Job-ID response header, or nil when
+      # the response had none. On a sync call that failed with 408, 424 or 500
+      # it names a job whose outcome verifications.retrieve can read.
+      attr_reader :job_id
 
       def initialize(message = nil, status_code: nil, status: nil, code: nil,
-                     request_id: nil, raw_body: nil)
+                     request_id: nil, raw_body: nil, job_id: nil)
         super(message)
         @status_code = status_code
         @status = status
         @code = code
         @request_id = request_id
         @raw_body = raw_body
+        @job_id = job_id
       end
     end
 
@@ -89,6 +94,9 @@ module SmileID
     # spec today; populate from a header if the backend ever sends one).
     REQUEST_ID_HEADERS = %w[x-request-id smileid-request-id request-id].freeze
 
+    # The response header that carries the Smile job id.
+    JOB_ID_HEADER = 'SmileID-Job-ID'
+
     # Select the error class for an HTTP status code.
     def self.class_for(status_code)
       return STATUS_CLASSES[status_code] if STATUS_CLASSES.key?(status_code)
@@ -108,7 +116,8 @@ module SmileID
         status: body['status'],
         code: body['code'],
         request_id: request_id_from(headers),
-        raw_body: raw_body
+        raw_body: raw_body,
+        job_id: job_id_from(headers)
       )
     end
 
@@ -119,6 +128,20 @@ module SmileID
         value = headers[name] || headers[name.split('-').map(&:capitalize).join('-')]
         return value if value
       end
+      nil
+    end
+
+    # The SmileID-Job-ID response header, or nil when it is absent.
+    def self.job_id_from(headers)
+      header_value(headers, JOB_ID_HEADER)
+    end
+
+    # Looks a response header up by name, ignoring case. Returns nil when the
+    # header is absent or headers is not a hash.
+    def self.header_value(headers, name)
+      return nil unless headers.respond_to?(:each_pair)
+
+      headers.each_pair { |key, value| return value if key.to_s.casecmp?(name) }
       nil
     end
   end

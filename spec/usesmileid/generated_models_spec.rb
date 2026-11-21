@@ -93,4 +93,22 @@ RSpec.describe SmileID::Generated::Models do
         .to eq(['2026-01-01T00:00:00Z', 'up', 0.99, 'up', 1.0, hash])
     end
   end
+
+  [SmileID::Generated::Models::BasicKycResult, SmileID::Generated::Models::OneTimeAmlResult].each do |model|
+    describe model do
+      it 'reads the response headers ignoring case' do
+        headers = { 'SMILEID-JOB-ID' => 'job_1', 'User-Id' => 'user_1',
+                    'response-signature' => 'sig', 'Response-Timestamp' => 'ts' }
+        result = model.from({ 'status' => 'clear' }, headers)
+        expect([result.job_id, result.user_id, result.response_signature, result.response_timestamp])
+          .to eq(%w[job_1 user_1 sig ts])
+      end
+
+      it 'leaves the header fields nil without headers' do
+        result = model.from('status' => 'clear')
+        expect([result.job_id, result.user_id, result.response_signature, result.response_timestamp])
+          .to eq([nil, nil, nil, nil])
+      end
+    end
+  end
 end
