@@ -94,7 +94,8 @@ RSpec.describe SmileID::Generated::Models do
     end
   end
 
-  [SmileID::Generated::Models::BasicKycResult, SmileID::Generated::Models::OneTimeAmlResult].each do |model|
+  [SmileID::Generated::Models::BasicKycResult, SmileID::Generated::Models::EnhancedKycResult,
+   SmileID::Generated::Models::OneTimeAmlResult].each do |model|
     describe model do
       it 'reads the response headers ignoring case' do
         headers = { 'SMILEID-JOB-ID' => 'job_1', 'User-Id' => 'user_1',
