@@ -110,7 +110,7 @@ accepted.job_id     # => "job_..."
 accepted.accepted?  # => true
 ```
 
-`enhanced_kyc.verify_sync` takes the same arguments but returns the result in the response. The API ignores `callback_url` on this call, so the client's `default_callback_url` isn't sent. The result carries the `Response-Signature` and `Response-Timestamp` headers as `response_signature` and `response_timestamp`, so you can check it the same way you check a webhook. If the verification can't be completed, it raises `SmileID::Errors::SmileIDError` with `status_code` 424, 408 or 500. The job may still have run, and resubmitting runs and bills a second lookup, so don't resubmit automatically. On a 408 or 424 the job is recorded: read its outcome with `verifications.retrieve(error.job_id)`. Do the same for a 500 that has a `job_id`. A 500 with no `job_id` means the job wasn't created.
+`enhanced_kyc.verify_sync` takes the same arguments but returns the result in the response. The API ignores `callback_url` on this call, so the client's `default_callback_url` isn't sent. The result carries the `Response-Signature` and `Response-Timestamp` headers as `response_signature` and `response_timestamp`, so you can check them with your own webhook signature verification code. The SDK doesn't verify them. If the verification can't be completed, it raises `SmileID::Errors::SmileIDError` with `status_code` 424, 408 or 500. The job may still have run, and resubmitting runs and bills a second lookup, so don't resubmit automatically. On a 408 or 424 the job is recorded: read its outcome with `verifications.retrieve(error.job_id)`. Do the same for a 500 that has a `job_id`. A 500 with no `job_id` means the job wasn't created.
 
 ```ruby
 result = smile.enhanced_kyc.verify_sync(
@@ -119,7 +119,7 @@ result = smile.enhanced_kyc.verify_sync(
 )
 result.status   # => "clear", "block", "attention" or "error"
 result.raw      # the full callback payload, including the ID authority's record
-result.job_id   # from the SmileID-Job-ID header
+result.job_id   # from the SmileID-Job-ID header, else the body's job_id
 ```
 
 ```ruby

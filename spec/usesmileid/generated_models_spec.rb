@@ -94,6 +94,42 @@ RSpec.describe SmileID::Generated::Models do
     end
   end
 
+  describe SmileID::Generated::Models::EnhancedKycResult do
+    let(:body) { { 'status' => 'clear', 'job_id' => 'job_body', 'user_id' => 'user_body' } }
+
+    it 'prefers the job and user id headers to the body' do
+      result = described_class.from(body, 'smileid-job-id' => 'job_header', 'user-id' => 'user_header')
+      expect([result.job_id, result.user_id]).to eq(%w[job_header user_header])
+    end
+
+    it 'falls back to the body when the headers are absent or blank' do
+      expect([described_class.from(body).job_id, described_class.from(body).user_id])
+        .to eq(%w[job_body user_body])
+      result = described_class.from(body, 'SmileID-Job-ID' => ' ', 'User-ID' => '')
+      expect([result.job_id, result.user_id]).to eq(%w[job_body user_body])
+    end
+
+    it 'gives nil ids when neither the headers nor the body have them' do
+      result = described_class.from('status' => 'clear')
+      expect([result.job_id, result.user_id]).to eq([nil, nil])
+    end
+
+    it 'reads the signature and timestamp from lower-case headers, nil when absent' do
+      result = described_class.from(body, 'response-signature' => 'c2ln',
+                                          'response-timestamp' => '2026-03-10T12:00:03.000Z')
+      expect([result.response_signature, result.response_timestamp])
+        .to eq(['c2ln', '2026-03-10T12:00:03.000Z'])
+      expect([described_class.from(body).response_signature, described_class.from(body).response_timestamp])
+        .to eq([nil, nil])
+    end
+
+    it 'keeps untyped body fields in raw' do
+      id_info = { 'full_name' => 'Amina Fatou Clearwater', 'dob' => '1990-01-01' }
+      result = described_class.from(body.merge('id_info' => id_info, 'photo' => 'base64'))
+      expect([result.raw['id_info'], result.raw['photo']]).to eq([id_info, 'base64'])
+    end
+  end
+
   [SmileID::Generated::Models::BasicKycResult, SmileID::Generated::Models::EnhancedKycResult,
    SmileID::Generated::Models::OneTimeAmlResult].each do |model|
     describe model do
