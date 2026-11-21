@@ -183,6 +183,12 @@ RSpec.describe SmileID::Errors do
       expect(error_for(424, 'SMILEID-JOB-ID' => 'job_upper').job_id).to eq('job_upper')
     end
 
+    it 'treats a blank header as absent and strips the value' do
+      expect(error_for(408, 'SmileID-Job-ID' => '').job_id).to be_nil
+      expect(error_for(408, 'SmileID-Job-ID' => "  \t").job_id).to be_nil
+      expect(error_for(408, 'SmileID-Job-ID' => ' job_408 ').job_id).to eq('job_408')
+    end
+
     it 'defaults to nil on a hand-built error' do
       expect(SmileID::Errors::APIError.new('boom').job_id).to be_nil
     end

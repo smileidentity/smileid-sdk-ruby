@@ -131,9 +131,11 @@ module SmileID
       nil
     end
 
-    # The SmileID-Job-ID response header, or nil when it is absent.
+    # The SmileID-Job-ID response header with surrounding whitespace removed,
+    # or nil when it is absent or blank.
     def self.job_id_from(headers)
-      header_value(headers, JOB_ID_HEADER)
+      job_id = header_value(headers, JOB_ID_HEADER).to_s.strip
+      job_id.empty? ? nil : job_id
     end
 
     # Looks a response header up by name, ignoring case. Returns nil when the

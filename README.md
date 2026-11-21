@@ -141,7 +141,9 @@ result.job_id                         # from the SmileID-Job-ID header
 begin
   result = smile.basic_kyc.verify_sync(...)
 rescue SmileID::Errors::SmileIDError => e
-  raise unless e.job_id  # no job was created
+  # Only a 408, 424 or 500 that names a job has an outcome to read.
+  raise unless [408, 424, 500].include?(e.status_code) && e.job_id
+
   status = smile.verifications.retrieve(e.job_id)  # don't resubmit
 end
 ```

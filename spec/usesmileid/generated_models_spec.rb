@@ -104,6 +104,11 @@ RSpec.describe SmileID::Generated::Models do
           .to eq(%w[job_1 user_1 sig ts])
       end
 
+      it 'treats a blank job id header as absent' do
+        expect(model.from({ 'status' => 'clear' }, 'SmileID-Job-ID' => '   ').job_id).to be_nil
+        expect(model.from({ 'status' => 'clear' }, 'SmileID-Job-ID' => ' job_1 ').job_id).to eq('job_1')
+      end
+
       it 'leaves the header fields nil without headers' do
         result = model.from('status' => 'clear')
         expect([result.job_id, result.user_id, result.response_signature, result.response_timestamp])
