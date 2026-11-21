@@ -110,6 +110,33 @@ accepted.job_id     # => "job_..."
 accepted.accepted?  # => true
 ```
 
+### Basic KYC
+
+Basic KYC checks the details you submit against the ID authority's record and reports a match verdict per field. It never returns the record itself. `basic_kyc.verify` takes the same arguments as Enhanced KYC, apart from `user_id`, and sends the result to your callback URL:
+
+```ruby
+accepted = smile.basic_kyc.verify(
+  country: "NG",
+  id_type: "NIN",
+  id_number: "12345678901",
+  user_details: user_details,
+  consent: consent,
+  callback_url: "https://example.com/callback"  # optional if a default is configured
+)
+```
+
+`basic_kyc.verify_sync` returns the result in the response. The API ignores `callback_url` on this call, so the client's `default_callback_url` isn't sent. If the verification can't be completed, it raises `SmileID::Errors::SmileIDError` with `status_code` 424, 408 or 500. The job may still have run, and resubmitting runs and bills a second lookup, so don't resubmit automatically.
+
+```ruby
+result = smile.basic_kyc.verify_sync(
+  country: "NG", id_type: "NIN", id_number: "12345678901",
+  user_details: user_details, consent: consent
+)
+result.status                         # => "clear", "block", "attention" or "error"
+result.match_results["overall"]       # => "exact_match", "partial_match", "transposed", "no_match" or "not_provided"
+result.job_id                         # from the SmileID-Job-ID header
+```
+
 ### AML screening
 
 One-Time AML screens a name against sanctions, PEP and adverse-media lists. `aml.submit` queues the screening and the result goes to your callback URL:

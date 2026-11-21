@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Basic KYC: `basic_kyc.verify` (async, result on the callback URL) and `basic_kyc.verify_sync` (result returned inline). The inline result is a `BasicKycResult` with a verdict per field in `match_results`, and it carries the `SmileID-Job-ID`, `User-ID`, `Response-Signature` and `Response-Timestamp` response headers. Both operations mint their token with the `basic_kyc` product claim.
+
 ## [13.1.0] - 2026-11-19
 
 ### Added

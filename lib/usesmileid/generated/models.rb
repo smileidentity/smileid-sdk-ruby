@@ -146,6 +146,48 @@ module SmileID
         end
       end
 
+      # Result of a Basic KYC verification: the body of POST /v3/basic_kyc/sync,
+      # which is the payload the async callback would have delivered. `status`
+      # is `clear`, `block`, `attention` or `error`. `match_results` is a plain
+      # hash with string keys: one verdict per submitted field (`overall`,
+      # `names`, `first_name`, `last_name`, `other_names`, `date_of_birth`,
+      # `gender`, `phone_number`, `secondary_id_number`), each one of
+      # `exact_match`, `partial_match`, `transposed`, `no_match` or
+      # `not_provided`. It is nil when no verdict was produced. Basic KYC never
+      # returns the ID record itself. The response headers are kept alongside
+      # the body, as for OneTimeAmlResult.
+      class BasicKycResult
+        attr_reader :status, :message, :reason, :created_at, :completed_at, :product,
+                    :partner_params, :match_results, :user_provided_info, :consent,
+                    :antifraud, :device_signals, :kyc_receipt,
+                    :job_id, :user_id, :response_signature, :response_timestamp, :raw
+
+        def initialize(hash, headers = {})
+          @status = hash['status']
+          @message = hash['message']
+          @reason = hash['reason']
+          @created_at = hash['created_at']
+          @completed_at = hash['completed_at']
+          @product = hash['product']
+          @partner_params = hash['partner_params']
+          @match_results = hash['match_results']
+          @user_provided_info = hash['user_provided_info']
+          @consent = hash['consent']
+          @antifraud = hash['antifraud']
+          @device_signals = hash['device_signals']
+          @kyc_receipt = hash['kyc_receipt']
+          @job_id = headers['smileid-job-id']
+          @user_id = headers['user-id']
+          @response_signature = headers['response-signature']
+          @response_timestamp = headers['response-timestamp']
+          @raw = hash
+        end
+
+        def self.from(hash, headers = {})
+          new(hash, headers)
+        end
+      end
+
       # One article in an AML Monitoring news response.
       class AmlMonitoringNewsItem
         attr_reader :body, :published_date, :publisher, :publisher_country_code,
