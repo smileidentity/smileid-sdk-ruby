@@ -193,8 +193,10 @@ module SmileID
       # would have delivered. `status` is `clear`, `block`, `attention` or
       # `error`. The spec documents only the fields every callback shares, so
       # those are read here; anything else the ID authority returned is in
-      # `raw`. The response headers are kept alongside the body, as for
-      # OneTimeAmlResult.
+      # `raw`. `job_id` and `user_id` come from the SmileID-Job-ID and User-ID
+      # headers, or from the body when a header is absent or blank.
+      # `response_signature` and `response_timestamp` are the
+      # Response-Signature and Response-Timestamp headers, or nil.
       class EnhancedKycResult
         attr_reader :status, :message, :reason, :created_at, :completed_at, :product,
                     :partner_params, :user_provided_info, :consent, :antifraud,
@@ -214,8 +216,8 @@ module SmileID
           @antifraud = hash['antifraud']
           @device_signals = hash['device_signals']
           @kyc_receipt = hash['kyc_receipt']
-          @job_id = Errors.job_id_from(headers)
-          @user_id = Errors.header_value(headers, 'user-id')
+          @job_id = Errors.job_id_from(headers) || hash['job_id']
+          @user_id = header_text(headers, 'user-id') || hash['user_id']
           @response_signature = Errors.header_value(headers, 'response-signature')
           @response_timestamp = Errors.header_value(headers, 'response-timestamp')
           @raw = hash
@@ -223,6 +225,15 @@ module SmileID
 
         def self.from(hash, headers = {})
           new(hash, headers)
+        end
+
+        private
+
+        # A response header's value with surrounding whitespace removed, or
+        # nil when it is absent or blank.
+        def header_text(headers, name)
+          value = Errors.header_value(headers, name).to_s.strip
+          value.empty? ? nil : value
         end
       end
 
