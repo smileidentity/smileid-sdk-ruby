@@ -161,6 +161,60 @@ RSpec.describe SmileID::Errors do
     end
   end
 
+  describe 'job_id from the SmileID-Job-ID header' do
+    def error_for(status_code, headers)
+      described_class.from_response(status_code: status_code, body: { 'message' => 'x' },
+                                    raw_body: '{"message":"x"}', headers: headers)
+    end
+
+    it 'sets job_id on a 408 that carries the header' do
+      error = error_for(408, 'SmileID-Job-ID' => 'job_408')
+      expect(error).to be_a(SmileID::Errors::SmileIDError)
+      expect(error.job_id).to eq('job_408')
+    end
+
+    it 'leaves job_id nil when the header is absent' do
+      expect(error_for(500, 'Content-Type' => 'application/json').job_id).to be_nil
+      expect(error_for(500, nil).job_id).to be_nil
+    end
+
+    it 'looks the header up ignoring case' do
+      expect(error_for(424, 'smileid-job-id' => 'job_lower').job_id).to eq('job_lower')
+      expect(error_for(424, 'SMILEID-JOB-ID' => 'job_upper').job_id).to eq('job_upper')
+    end
+
+    it 'treats a blank header as absent and strips the value' do
+      expect(error_for(408, 'SmileID-Job-ID' => '').job_id).to be_nil
+      expect(error_for(408, 'SmileID-Job-ID' => "  \t").job_id).to be_nil
+      expect(error_for(408, 'SmileID-Job-ID' => ' job_408 ').job_id).to eq('job_408')
+    end
+
+    it 'defaults to nil on a hand-built error' do
+      expect(SmileID::Errors::APIError.new('boom').job_id).to be_nil
+    end
+
+    it 'is set from the response on an error raised by an API call' do
+      stub_token
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/enhanced_kyc")
+        .to_return(status: 500, body: '{"status":"Failed","message":"Internal error."}',
+                   headers: { 'Content-Type' => 'application/json', 'smileid-job-id' => 'job_500' })
+
+      expect do
+        client.enhanced_kyc.verify(country: 'NG', id_type: 'NIN', id_number: '1',
+                                   user_details: valid_user_details, consent: valid_consent)
+      end.to raise_error(SmileID::Errors::APIError) { |error| expect(error.job_id).to eq('job_500') }
+    end
+
+    it 'is set on an UnexpectedResponseError' do
+      stub_request(:get, "#{TestHelpers::SANDBOX}/v3/services/bank_codes")
+        .to_return(status: 200, body: 'not-json',
+                   headers: { 'Content-Type' => 'text/plain', 'SmileID-Job-ID' => 'job_2xx' })
+
+      expect { client.services.bank_codes }
+        .to raise_error(SmileID::Errors::UnexpectedResponseError) { |error| expect(error.job_id).to eq('job_2xx') }
+    end
+  end
+
   describe 'jobs.retrieve 404 handling (spec 6.8)' do
     it 'returns a not_found JobStatus instead of raising NotFoundError' do
       stub_token

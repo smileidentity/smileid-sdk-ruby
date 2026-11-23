@@ -125,7 +125,7 @@ accepted = smile.basic_kyc.verify(
 )
 ```
 
-`basic_kyc.verify_sync` returns the result in the response. The API ignores `callback_url` on this call, so the client's `default_callback_url` isn't sent. If the verification can't be completed, it raises `SmileID::Errors::SmileIDError` with `status_code` 424, 408 or 500. The job may still have run, and resubmitting runs and bills a second lookup, so don't resubmit automatically.
+`basic_kyc.verify_sync` returns the result in the response. The API ignores `callback_url` on this call, so the client's `default_callback_url` isn't sent. If the verification can't be completed, it raises `SmileID::Errors::SmileIDError` with `status_code` 424, 408 or 500. The job may still have run, and resubmitting runs and bills a second lookup, so don't resubmit automatically. On a 408 or 424 the job is recorded: read its outcome with `verifications.retrieve(error.job_id)`. Do the same for a 500 that has a `job_id`. A 500 with no `job_id` means the job wasn't created.
 
 ```ruby
 result = smile.basic_kyc.verify_sync(
@@ -135,6 +135,17 @@ result = smile.basic_kyc.verify_sync(
 result.status                         # => "clear", "block", "attention" or "error"
 result.match_results["overall"]       # => "exact_match", "partial_match", "transposed", "no_match" or "not_provided"
 result.job_id                         # from the SmileID-Job-ID header
+```
+
+```ruby
+begin
+  result = smile.basic_kyc.verify_sync(...)
+rescue SmileID::Errors::SmileIDError => e
+  # Only a 408, 424 or 500 that names a job has an outcome to read.
+  raise unless [408, 424, 500].include?(e.status_code) && e.job_id
+
+  status = smile.verifications.retrieve(e.job_id)  # don't resubmit
+end
 ```
 
 ### AML screening
@@ -151,7 +162,7 @@ accepted = smile.aml.submit(
 )
 ```
 
-`aml.submit_sync` takes the same arguments but returns the result in the response, so `callback_url` is optional. Pass an `idempotency_key:` (16 to 128 characters of `A-Z a-z 0-9 - _`) so a retry returns the original result instead of a second billed screening. A provider timeout raises `SmileID::Errors::SmileIDError` with `status_code` 408.
+`aml.submit_sync` takes the same arguments but returns the result in the response, so `callback_url` is optional. Pass an `idempotency_key:` (16 to 128 characters of `A-Z a-z 0-9 - _`) so a retry returns the original result instead of a second billed screening. A provider timeout raises `SmileID::Errors::SmileIDError` with `status_code` 408. Nothing is billed and the job is final in `error`, so resubmit rather than reading its status, with the same `idempotency_key:` to make the resubmission safe to repeat. A 500 that has a `job_id` means the job exists: read its outcome with `verifications.retrieve(error.job_id)`.
 
 ```ruby
 result = smile.aml.submit_sync(
@@ -385,7 +396,7 @@ Every API failure raises a typed error under `SmileID::Errors`, keyed on the HTT
 | `TimeoutError` | `wait_until_complete` deadline passed (no HTTP response) |
 | `UnexpectedResponseError` | a 2xx response whose body is not the expected JSON object, for example proxy interference |
 
-Each error exposes `status_code`, `status`, `message`, `code`, `request_id` and `raw_body`.
+Each error exposes `status_code`, `status`, `message`, `code`, `request_id`, `job_id` and `raw_body`. `job_id` comes from the `SmileID-Job-ID` response header and is `nil` when the response had none.
 
 ```ruby
 begin

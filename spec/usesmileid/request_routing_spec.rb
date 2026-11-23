@@ -219,6 +219,44 @@ RSpec.describe 'request routing' do
       end
     end
 
+    it 'gives the job id on a 408 so the outcome can be read from the status endpoint' do
+      sync = stub_request(:post, "#{TestHelpers::SANDBOX}/v3/basic_kyc/sync")
+             .to_return(status: 408,
+                        body: JSON.generate(status: 'Request Timeout', message: 'ID authority timed out.'),
+                        headers: { 'Content-Type' => 'application/json',
+                                   'SmileID-Job-ID' => 'job_01h8x9y2z3a4b5c6d7e8f9g0h1' })
+      status_stub = stub_request(:get, "#{TestHelpers::SANDBOX}/v3/status/job_01h8x9y2z3a4b5c6d7e8f9g0h1")
+                    .to_return(status: 200,
+                               body: JSON.generate(status: 'clear', message: 'Job completed',
+                                                   job_id: 'job_01h8x9y2z3a4b5c6d7e8f9g0h1',
+                                                   user_id: 'user-1234'),
+                               headers: { 'Content-Type' => 'application/json' })
+
+      job_id = nil
+      begin
+        client.basic_kyc.verify_sync(**kyc_args)
+      rescue SmileID::Errors::SmileIDError => e
+        expect(e.status_code).to eq(408)
+        job_id = e.job_id
+      end
+      status = client.verifications.retrieve(job_id)
+
+      expect(job_id).to eq('job_01h8x9y2z3a4b5c6d7e8f9g0h1')
+      expect(sync).to have_been_requested.once
+      expect(status_stub).to have_been_requested.once
+      expect([status.status, status.complete?, status.job_id, status.user_id])
+        .to eq(['clear', true, 'job_01h8x9y2z3a4b5c6d7e8f9g0h1', 'user-1234'])
+    end
+
+    it 'leaves job_id nil on a 500 without the header (no job was created)' do
+      stub_request(:post, "#{TestHelpers::SANDBOX}/v3/basic_kyc/sync")
+        .to_return(status: 500, body: JSON.generate(message: 'Internal server error'),
+                   headers: { 'Content-Type' => 'application/json' })
+
+      expect { client.basic_kyc.verify_sync(**kyc_args) }
+        .to raise_error(SmileID::Errors::APIError) { |error| expect(error.job_id).to be_nil }
+    end
+
     it 'rejects a non-https callback URL before sending' do
       expect { client.basic_kyc.verify_sync(**kyc_args, callback_url: 'http://example.com/cb') }
         .to raise_error(SmileID::Errors::ValidationError)
@@ -668,6 +706,24 @@ RSpec.describe 'request routing' do
           expect(error.message).to eq('Provider timed out.')
         }
       expect(stub).to have_been_requested.once
+    end
+
+    it 'gives the job id on a 408 and a 500, without retrying' do
+      stub = stub_request(:post, "#{TestHelpers::SANDBOX}/v3/aml/sync")
+             .to_return({ status: 408, body: JSON.generate(message: 'Provider timed out.'),
+                          headers: { 'Content-Type' => 'application/json', 'SmileID-Job-ID' => 'job_408' } },
+                        { status: 500, body: JSON.generate(message: 'Internal error.'),
+                          headers: { 'Content-Type' => 'application/json', 'SmileID-Job-ID' => 'job_500' } })
+
+      expect { client.aml.submit_sync(**aml_args) }
+        .to raise_error(SmileID::Errors::SmileIDError) { |error|
+          expect([error.status_code, error.job_id]).to eq([408, 'job_408'])
+        }
+      expect { client.aml.submit_sync(**aml_args) }
+        .to raise_error(SmileID::Errors::APIError) { |error|
+          expect([error.status_code, error.job_id]).to eq([500, 'job_500'])
+        }
+      expect(stub).to have_been_requested.twice
     end
 
     it 'rejects a non-https callback URL before sending' do
