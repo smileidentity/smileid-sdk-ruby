@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [13.2.0] - 2026-11-24
+
 ### Added
 
 - Basic KYC: `basic_kyc.verify` (async, result on the callback URL) and `basic_kyc.verify_sync` (result returned inline). The inline result is a `BasicKycResult` with a verdict per field in `match_results`, and it carries the `SmileID-Job-ID`, `User-ID`, `Response-Signature` and `Response-Timestamp` response headers. Both operations mint their token with the `basic_kyc` product claim.
@@ -84,7 +86,8 @@ First public release.
 - Typed errors under `SmileID::Errors`, keyed on HTTP status.
 - Bank codes, supported ID types and supported documents lookups.
 
-[Unreleased]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v13.1.0...HEAD
+[Unreleased]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v13.2.0...HEAD
+[13.2.0]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v13.1.0...v13.2.0
 [13.1.0]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v13.0.0...v13.1.0
 [13.0.0]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v12.1.0...v13.0.0
 [12.1.0]: https://github.com/smileidentity/smileid-sdk-ruby/compare/v12.0.0...v12.1.0
