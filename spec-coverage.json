@@ -116,11 +116,11 @@
       "method": "client.biometric.compare",
       "path": "POST /v3/compare"
     },
-    "v3AddressVerification": {"unsupported": "Planned for 13.3.0."},
-    "v3PhoneVerification": {"unsupported": "Planned for 13.3.0."},
-    "createSmileLink": {"unsupported": "Planned for 13.3.0."},
-    "getSmileLink": {"unsupported": "Planned for 13.3.0."},
-    "listSmileLinks": {"unsupported": "Planned for 13.3.0."},
-    "updateSmileLink": {"unsupported": "Planned for 13.3.0."}
+    "v3AddressVerification": {"method": "client.address.verify", "path": "POST /v3/address"},
+    "v3PhoneVerification": {"method": "client.phone.verify", "path": "POST /v3/phone"},
+    "createSmileLink": {"method": "client.smile_links.create", "path": "POST /v3/smile_links"},
+    "getSmileLink": {"method": "client.smile_links.get", "path": "GET /v3/smile_links/{refId}"},
+    "listSmileLinks": {"method": "client.smile_links.list", "path": "GET /v3/smile_links"},
+    "updateSmileLink": {"method": "client.smile_links.update", "path": "PUT /v3/smile_links/{refId}"}
   }
 }

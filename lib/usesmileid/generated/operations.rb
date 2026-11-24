@@ -7,7 +7,7 @@ module SmileID
     # to route auth, headers, body kind, and retry behaviour.
     module Operations
       Operation = Struct.new(
-        :http_method,     # :get / :post
+        :http_method,     # :get / :post / :put
         :path,            # path template, e.g. "/v3/status/{job_id}"
         :authenticated,   # attach SmileID-Token?
         :partner_id_header, # attach SmileID-Partner-ID?
@@ -108,6 +108,38 @@ module SmileID
           authenticated: true, partner_id_header: false, body_kind: nil, idempotent: true,
           success_statuses: [200],
           product: 'aml'
+        ),
+        address_verification: Operation.new(
+          http_method: :post, path: '/v3/address', authenticated: true,
+          partner_id_header: false, body_kind: :multipart, idempotent: false,
+          success_statuses: [202],
+          product: 'address_verification'
+        ),
+        phone_verification: Operation.new(
+          http_method: :post, path: '/v3/phone', authenticated: true,
+          partner_id_header: false, body_kind: :multipart, idempotent: false,
+          success_statuses: [202],
+          product: 'phone_number_verification'
+        ),
+        create_smile_link: Operation.new(
+          http_method: :post, path: '/v3/smile_links', authenticated: true,
+          partner_id_header: false, body_kind: :multipart, idempotent: false,
+          success_statuses: [201]
+        ),
+        list_smile_links: Operation.new(
+          http_method: :get, path: '/v3/smile_links', authenticated: true,
+          partner_id_header: false, body_kind: nil, idempotent: true,
+          success_statuses: [200]
+        ),
+        get_smile_link: Operation.new(
+          http_method: :get, path: '/v3/smile_links/{ref_id}', authenticated: true,
+          partner_id_header: false, body_kind: nil, idempotent: true,
+          success_statuses: [200]
+        ),
+        update_smile_link: Operation.new(
+          http_method: :put, path: '/v3/smile_links/{ref_id}', authenticated: true,
+          partner_id_header: false, body_kind: :multipart, idempotent: false,
+          success_statuses: [200]
         ),
         status: Operation.new(
           http_method: :get, path: '/v3/status/{job_id}', authenticated: true,

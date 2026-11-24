@@ -25,9 +25,13 @@ class SmileID::Generated::Models::EnhancedKycResult < Object
 class SmileID::Generated::Models::IdStatusResponse < Object
 class SmileID::Generated::Models::JobStatus < Object
 class SmileID::Generated::Models::OneTimeAmlResult < Object
+class SmileID::Generated::Models::SmileLink < Object
+class SmileID::Generated::Models::SmileLinkCreated < Object
+class SmileID::Generated::Models::SmileLinkList < Object
 class SmileID::Generated::Models::SupportedDocumentsResponse < Object
 class SmileID::Generated::Models::SupportedIdTypesResponse < Object
 class SmileID::Generated::Operations::Operation < Struct
+class SmileID::Resources::Address < SmileID::Resources::Base
 class SmileID::Resources::Aml < SmileID::Resources::Base
 class SmileID::Resources::AmlMonitoring < SmileID::Resources::Base
 class SmileID::Resources::Base < Object
@@ -36,7 +40,9 @@ class SmileID::Resources::Biometric < SmileID::Resources::Base
 class SmileID::Resources::BiometricKyc < SmileID::Resources::Base
 class SmileID::Resources::Documents < SmileID::Resources::Base
 class SmileID::Resources::EnhancedKyc < SmileID::Resources::Base
+class SmileID::Resources::Phone < SmileID::Resources::Base
 class SmileID::Resources::Services < SmileID::Resources::Base
+class SmileID::Resources::SmileLinks < SmileID::Resources::Base
 class SmileID::Resources::Users < SmileID::Resources::Base
 class SmileID::Resources::Verifications < SmileID::Resources::Base
 class SmileID::Response < Object
@@ -51,6 +57,7 @@ constant SmileID::Consent::NOTICE_LANGUAGE: Regexp
 constant SmileID::Errors::JOB_ID_HEADER: String
 constant SmileID::Errors::REQUEST_ID_HEADERS: Array
 constant SmileID::Errors::STATUS_CLASSES: Hash
+constant SmileID::Generated::Models::SmileLink::FIELDS: Array
 constant SmileID::Generated::Operations::OPS: Hash
 constant SmileID::Helpers::Multipart::BINARY_ARRAY_FIELDS: Array
 constant SmileID::Helpers::Multipart::BINARY_FIELDS: Array
@@ -61,7 +68,9 @@ constant SmileID::Helpers::Multipart::JSON_PART_FIELDS: Array
 constant SmileID::Helpers::Multipart::MEDIA_TYPE: Regexp
 constant SmileID::Helpers::Multipart::PNG_CAPABLE_FIELDS: Array
 constant SmileID::Helpers::Multipart::PNG_MAGIC: String
+constant SmileID::Resources::Address::UTILITY_TYPES: Array
 constant SmileID::Resources::AmlMonitoring::NEWS_CATEGORIES: Array
+constant SmileID::Resources::Phone::OPERATORS: Array
 constant SmileID::Resources::Users::REASONS: Array
 constant SmileID::Telemetry::SDK_NAME: String
 constant SmileID::Transport::BACKOFF_BASE: Float
@@ -69,6 +78,7 @@ constant SmileID::Transport::RETRY_AFTER_CAP: Integer
 constant SmileID::Transport::RETRY_STATUSES: Array
 constant SmileID::UserDetails::PHONE_NUMBER: Regexp
 constant SmileID::VERSION: String
+method SmileID::Client#address()
 method SmileID::Client#aml()
 method SmileID::Client#aml_monitoring()
 method SmileID::Client#basic_kyc()
@@ -78,7 +88,9 @@ method SmileID::Client#call(op_key, form: ?, path_params: ?, query: ?, user_id_h
 method SmileID::Client#config()
 method SmileID::Client#documents()
 method SmileID::Client#enhanced_kyc()
+method SmileID::Client#phone()
 method SmileID::Client#services()
+method SmileID::Client#smile_links()
 method SmileID::Client#users()
 method SmileID::Client#verifications()
 method SmileID::Client.new(partner_id:, api_key:, environment: ?, default_callback_url: ?, base_url: ?, timeout: ?, max_retries: ?, http_client: ?)
@@ -246,6 +258,49 @@ method SmileID::Generated::Models::OneTimeAmlResult#user_id()
 method SmileID::Generated::Models::OneTimeAmlResult#user_provided_info()
 method SmileID::Generated::Models::OneTimeAmlResult.from(hash, headers = ?)
 method SmileID::Generated::Models::OneTimeAmlResult.new(hash, headers = ?)
+method SmileID::Generated::Models::SmileLink#attention()
+method SmileID::Generated::Models::SmileLink#block()
+method SmileID::Generated::Models::SmileLink#callback_url()
+method SmileID::Generated::Models::SmileLink#clear()
+method SmileID::Generated::Models::SmileLink#company_name()
+method SmileID::Generated::Models::SmileLink#created_at()
+method SmileID::Generated::Models::SmileLink#description()
+method SmileID::Generated::Models::SmileLink#disabled?()
+method SmileID::Generated::Models::SmileLink#disabled_at()
+method SmileID::Generated::Models::SmileLink#error()
+method SmileID::Generated::Models::SmileLink#expires_at()
+method SmileID::Generated::Models::SmileLink#failed_jobs()
+method SmileID::Generated::Models::SmileLink#id_types()
+method SmileID::Generated::Models::SmileLink#is_single_use()
+method SmileID::Generated::Models::SmileLink#link()
+method SmileID::Generated::Models::SmileLink#logo_url()
+method SmileID::Generated::Models::SmileLink#name()
+method SmileID::Generated::Models::SmileLink#notice_privacy_policy_url()
+method SmileID::Generated::Models::SmileLink#partner_params()
+method SmileID::Generated::Models::SmileLink#raw()
+method SmileID::Generated::Models::SmileLink#redirect_url()
+method SmileID::Generated::Models::SmileLink#ref_id()
+method SmileID::Generated::Models::SmileLink#successful_jobs()
+method SmileID::Generated::Models::SmileLink#theme_color()
+method SmileID::Generated::Models::SmileLink#token_provided_fields()
+method SmileID::Generated::Models::SmileLink#token_provided_values()
+method SmileID::Generated::Models::SmileLink#total_jobs()
+method SmileID::Generated::Models::SmileLink#updated_at()
+method SmileID::Generated::Models::SmileLink#user_id()
+method SmileID::Generated::Models::SmileLink.from(hash)
+method SmileID::Generated::Models::SmileLink.new(hash)
+method SmileID::Generated::Models::SmileLinkCreated#link()
+method SmileID::Generated::Models::SmileLinkCreated#message()
+method SmileID::Generated::Models::SmileLinkCreated#raw()
+method SmileID::Generated::Models::SmileLinkCreated#ref_id()
+method SmileID::Generated::Models::SmileLinkCreated#user_id()
+method SmileID::Generated::Models::SmileLinkCreated.from(hash)
+method SmileID::Generated::Models::SmileLinkCreated.new(link:, message: ?, ref_id: ?, user_id: ?, raw: ?)
+method SmileID::Generated::Models::SmileLinkList#links()
+method SmileID::Generated::Models::SmileLinkList#meta()
+method SmileID::Generated::Models::SmileLinkList#raw()
+method SmileID::Generated::Models::SmileLinkList.from(hash)
+method SmileID::Generated::Models::SmileLinkList.new(links:, meta:, raw: ?)
 method SmileID::Generated::Models::SupportedDocumentsResponse#raw()
 method SmileID::Generated::Models::SupportedDocumentsResponse#valid_documents()
 method SmileID::Generated::Models::SupportedDocumentsResponse.from(hash)
@@ -290,6 +345,8 @@ method SmileID::Helpers::Multipart.sanitize_filename(filename)
 method SmileID::Helpers::Multipart.scalar_string(value)
 method SmileID::Helpers::Multipart.text_part(name, value, boundary)
 method SmileID::Helpers::Multipart.validate_content_type!(content_type)
+method SmileID::Resources::Address#verify(address:, country:, user_details:, consent:, id_number: ?, utility_number: ?, utility_provider: ?, utility_type: ?, user_id: ?, callback_url: ?, partner_params: ?, metadata: ?, timeout: ?)
+method SmileID::Resources::Address.new(client)
 method SmileID::Resources::Aml#submit(countries:, full_name:, user_details:, consent:, birth_year: ?, strict_match: ?, aliases: ?, search_existing_user: ?, callback_url: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
 method SmileID::Resources::Aml#submit_sync(countries:, full_name:, user_details:, consent:, birth_year: ?, strict_match: ?, aliases: ?, search_existing_user: ?, callback_url: ?, partner_params: ?, metadata: ?, user_id: ?, idempotency_key: ?, timeout: ?)
 method SmileID::Resources::Aml.new(client)
@@ -313,11 +370,18 @@ method SmileID::Resources::Documents.new(client)
 method SmileID::Resources::EnhancedKyc#verify(country:, id_type:, id_number:, user_details:, consent:, callback_url: ?, bank_code: ?, operator: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
 method SmileID::Resources::EnhancedKyc#verify_sync(country:, id_type:, id_number:, user_details:, consent:, callback_url: ?, bank_code: ?, operator: ?, partner_params: ?, metadata: ?, user_id: ?, timeout: ?)
 method SmileID::Resources::EnhancedKyc.new(client)
+method SmileID::Resources::Phone#verify(country:, phone_number:, user_details:, consent:, operator: ?, id_number: ?, user_id: ?, callback_url: ?, partner_params: ?, metadata: ?, timeout: ?)
+method SmileID::Resources::Phone.new(client)
 method SmileID::Resources::Services#bank_codes(country: ?, timeout: ?)
 method SmileID::Resources::Services#id_status(country:, id_type:, timeout: ?)
 method SmileID::Resources::Services#supported_documents(continent: ?, country_code: ?, locale: ?, timeout: ?)
 method SmileID::Resources::Services#supported_id_types(country: ?, timeout: ?)
 method SmileID::Resources::Services.new(client)
+method SmileID::Resources::SmileLinks#create(id_types:, name:, notice_privacy_policy_url:, is_single_use:, company_name: ?, callback_url: ?, description: ?, expires_at: ?, logo_url: ?, redirect_url: ?, theme_color: ?, partner_params: ?, user_id: ?, timeout: ?)
+method SmileID::Resources::SmileLinks#get(ref_id, timeout: ?)
+method SmileID::Resources::SmileLinks#list(limit: ?, page: ?, single_use: ?, timeout: ?)
+method SmileID::Resources::SmileLinks#update(ref_id, id_types: ?, is_disabled: ?, timeout: ?)
+method SmileID::Resources::SmileLinks.new(client)
 method SmileID::Resources::Users#clear_fraud(user_id, notes:, reported_by:, timeout: ?)
 method SmileID::Resources::Users#flag_fraud(user_id, reason:, reported_by:, notes: ?, timeout: ?)
 method SmileID::Resources::Users#report_fraud(user_id, is_fraud:, reported_by:, reason: ?, notes: ?, timeout: ?)

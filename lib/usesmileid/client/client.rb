@@ -63,6 +63,18 @@ module SmileID
       @aml_monitoring ||= Resources::AmlMonitoring.new(self)
     end
 
+    def address
+      @address ||= Resources::Address.new(self)
+    end
+
+    def phone
+      @phone ||= Resources::Phone.new(self)
+    end
+
+    def smile_links
+      @smile_links ||= Resources::SmileLinks.new(self)
+    end
+
     def services
       @services ||= Resources::Services.new(self)
     end
