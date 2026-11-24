@@ -29,9 +29,9 @@
       "method": "client.verifications.retrieve",
       "path": "GET /v3/status/{jobId}",
       "response_headers": {
-        "api_version": {"unsupported": "The SDK doesn't read this header, and JobStatus has no field for it."},
-        "job_id": {"unsupported": "The SDK doesn't read this header. JobStatus.job_id comes from the response body's job_id field."},
-        "user_id": {"unsupported": "The SDK doesn't read this header. JobStatus.user_id comes from the response body's user_id field."}
+        "api_version": {"unsupported": "The SDK doesn't read the api_version header. It is lambda's deployed version, a diagnostic value the spec declares only on this operation.", "backfill": false},
+        "job_id": {"unsupported": "The SDK doesn't read this header. JobStatus.job_id comes from the response body's job_id field.", "backfill": false},
+        "user_id": {"unsupported": "The SDK doesn't read this header. JobStatus.user_id comes from the response body's user_id field.", "backfill": false}
       }
     },
     "replayCallback": {
