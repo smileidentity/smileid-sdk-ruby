@@ -263,6 +263,180 @@ RSpec.describe 'request routing' do
     end
   end
 
+  describe 'enhanced_kyc.verify_sync' do
+    let(:job_id) { 'job_01h8x9y2z3a4b5c6d7e8f9g0h1' }
+    let(:sync_url) { "#{TestHelpers::SANDBOX}/v3/enhanced_kyc/sync" }
+    let(:kyc_args) do
+      { country: 'NG', id_type: 'NIN', id_number: '12345678901',
+        user_details: { given_names: 'Amina Fatou', last_name: 'Clearwater',
+                        email: 'amina.clearwater@example.com' },
+        consent: valid_consent }
+    end
+    # The Clearwater persona from the submitEnhancedKycSync fixtures case.
+    let(:result_body) do
+      JSON.generate(
+        status: 'clear', message: 'Verification successful', reason: nil,
+        created_at: '2026-03-10T12:00:00.000Z', completed_at: '2026-03-10T12:00:03.000Z',
+        product: 'enhanced_kyc', partner_params: { order_id: 'ORD-1' },
+        user_provided_info: { given_names: 'Amina Fatou', last_name: 'Clearwater',
+                              email: 'amina.clearwater@example.com', id_number: '12345678901' },
+        consent: { granted: true }, antifraud: nil, device_signals: nil,
+        kyc_receipt: 'https://example.com/receipt', full_name: 'Amina Fatou Clearwater'
+      )
+    end
+    let(:result_headers) do
+      { 'Content-Type' => 'application/json', 'SmileID-Job-ID' => job_id,
+        'User-ID' => 'user-1234', 'Response-Signature' => 'c2ln',
+        'Response-Timestamp' => '2026-03-10T12:00:03.000Z' }
+    end
+
+    it 'sends the golden request and parses the inline result with its headers' do
+      captured = nil
+      stub_request(:post, sync_url).to_return do |request|
+        captured = request
+        { status: 200, body: result_body, headers: result_headers }
+      end
+
+      result = client.enhanced_kyc.verify_sync(
+        **kyc_args, callback_url: 'https://example.com/cb', bank_code: '044', operator: 'MTN',
+                    partner_params: { order_id: 'ORD-1' }, metadata: [{ name: 'k', value: 'v' }],
+                    user_id: 'user-1234'
+      )
+
+      expect(captured.method).to eq(:post)
+      expect(captured.uri.path).to eq('/v3/enhanced_kyc/sync')
+      expect(captured.headers['Smileid-Token']).to eq(jwt)
+      expect(captured.headers['User-Id']).to eq('user-1234')
+      expect(captured.headers['Smileid-Partner-Id']).to be_nil
+      expect(captured.headers['Smileid-Source-Sdk']).to eq('ruby')
+      expect(captured.headers['Content-Type']).to start_with('multipart/form-data; boundary=')
+      body = captured.body.dup.force_encoding('UTF-8')
+      expect(body).to include("name=\"country\"\r\n\r\nNG\r\n")
+      expect(body).to include("name=\"id_type\"\r\n\r\nNIN\r\n")
+      expect(body).to include("name=\"id_number\"\r\n\r\n12345678901\r\n")
+      expect(body).to include("name=\"callback_url\"\r\n\r\nhttps://example.com/cb\r\n")
+      expect(body).to include("name=\"bank_code\"\r\n\r\n044\r\n")
+      expect(body).to include("name=\"operator\"\r\n\r\nMTN\r\n")
+      expect(body).to include("name=\"partner_params\"\r\nContent-Type: application/json\r\n\r\n" \
+                              '{"order_id":"ORD-1"}')
+      expect(body).to include("name=\"metadata\"\r\nContent-Type: application/json\r\n\r\n" \
+                              '[{"name":"k","value":"v"}]')
+      expect(body).to include("name=\"user_details\"\r\nContent-Type: application/json\r\n\r\n" \
+                              '{"given_names":"Amina Fatou","last_name":"Clearwater",' \
+                              '"email":"amina.clearwater@example.com"}')
+      expect(body).to include("name=\"consent\"\r\nContent-Type: application/json\r\n\r\n" \
+                              '{"granted":true,"granted_at":"2026-03-06T12:00:00.000Z",' \
+                              '"notice_language":"EN",' \
+                              '"notice_privacy_policy_url":"https://example.com/privacy"}')
+      expect(body).not_to include('name="user_id"')
+
+      expect(result).to be_a(SmileID::Generated::Models::EnhancedKycResult)
+      expect(result.status).to eq('clear')
+      expect(result.message).to eq('Verification successful')
+      expect(result.reason).to be_nil
+      expect(result.product).to eq('enhanced_kyc')
+      expect(result.created_at).to eq('2026-03-10T12:00:00.000Z')
+      expect(result.completed_at).to eq('2026-03-10T12:00:03.000Z')
+      expect(result.partner_params).to eq('order_id' => 'ORD-1')
+      expect(result.user_provided_info['last_name']).to eq('Clearwater')
+      expect(result.consent).to eq('granted' => true)
+      expect(result.antifraud).to be_nil
+      expect(result.device_signals).to be_nil
+      expect(result.kyc_receipt).to eq('https://example.com/receipt')
+      expect(result.job_id).to eq(job_id)
+      expect(result.user_id).to eq('user-1234')
+      expect(result.response_signature).to eq('c2ln')
+      expect(result.response_timestamp).to eq('2026-03-10T12:00:03.000Z')
+      expect(result.raw['full_name']).to eq('Amina Fatou Clearwater')
+    end
+
+    it 'sends no callback_url when none is given, even with a default configured' do
+      captured = nil
+      stub_request(:post, sync_url).to_return do |request|
+        captured = request
+        { status: 200, body: result_body, headers: { 'Content-Type' => 'application/json' } }
+      end
+
+      result = build_client(default_callback_url: 'https://example.com/default')
+               .enhanced_kyc.verify_sync(**kyc_args)
+      body = captured.body.dup.force_encoding('UTF-8')
+      expect(body).not_to include('name="callback_url"')
+      expect(captured.headers['User-Id']).to be_nil
+      expect(result.job_id).to be_nil
+    end
+
+    it 'raises an APIError for a 500 without retrying, though a 500 is retryable' do
+      stub = stub_request(:post, sync_url)
+             .to_return(status: 500,
+                        body: JSON.generate(status: 'Failed', message: 'Internal error.'),
+                        headers: { 'Content-Type' => 'application/json', 'SmileID-Job-ID' => job_id })
+
+      expect { client.enhanced_kyc.verify_sync(**kyc_args) }
+        .to raise_error(SmileID::Errors::APIError) { |error|
+          expect([error.status_code, error.job_id]).to eq([500, job_id])
+        }
+      expect(stub).to have_been_requested.once
+    end
+
+    [408, 424].each do |code|
+      it "raises a SmileIDError with status #{code} without retrying" do
+        stub = stub_request(:post, sync_url)
+               .to_return(status: code,
+                          body: JSON.generate(status: 'Failed', message: 'ID authority unavailable.'),
+                          headers: { 'Content-Type' => 'application/json', 'SmileID-Job-ID' => job_id })
+
+        expect { client.enhanced_kyc.verify_sync(**kyc_args) }
+          .to raise_error(SmileID::Errors::SmileIDError) { |error|
+            expect([error.status_code, error.message, error.job_id])
+              .to eq([code, 'ID authority unavailable.', job_id])
+          }
+        expect(stub).to have_been_requested.once
+      end
+    end
+
+    it 'gives the job id on a 408 so the outcome can be read from the status endpoint' do
+      sync = stub_request(:post, sync_url)
+             .to_return(status: 408,
+                        body: JSON.generate(status: 'Request Timeout', message: 'ID authority timed out.'),
+                        headers: { 'Content-Type' => 'application/json', 'SmileID-Job-ID' => job_id })
+      status_stub = stub_request(:get, "#{TestHelpers::SANDBOX}/v3/status/#{job_id}")
+                    .to_return(status: 200,
+                               body: JSON.generate(status: 'clear', message: 'Verification successful',
+                                                   job_id: job_id, user_id: 'user-1234'),
+                               headers: { 'Content-Type' => 'application/json' })
+
+      error_job_id = nil
+      begin
+        client.enhanced_kyc.verify_sync(**kyc_args)
+      rescue SmileID::Errors::SmileIDError => e
+        expect(e.status_code).to eq(408)
+        error_job_id = e.job_id
+      end
+      status = client.verifications.retrieve(error_job_id)
+
+      expect(error_job_id).to eq(job_id)
+      expect(sync).to have_been_requested.once
+      expect(status_stub).to have_been_requested.once
+      expect([status.status, status.complete?, status.message, status.job_id, status.user_id])
+        .to eq(['clear', true, 'Verification successful', job_id, 'user-1234'])
+    end
+
+    it 'leaves job_id nil on a 500 without the header (no job was created)' do
+      stub_request(:post, sync_url)
+        .to_return(status: 500, body: JSON.generate(message: 'Internal server error'),
+                   headers: { 'Content-Type' => 'application/json' })
+
+      expect { client.enhanced_kyc.verify_sync(**kyc_args) }
+        .to raise_error(SmileID::Errors::APIError) { |error| expect(error.job_id).to be_nil }
+    end
+
+    it 'rejects a non-https callback URL before sending' do
+      expect { client.enhanced_kyc.verify_sync(**kyc_args, callback_url: 'http://example.com/cb') }
+        .to raise_error(SmileID::Errors::ValidationError)
+      expect(a_request(:post, sync_url)).not_to have_been_made
+    end
+  end
+
   describe 'documents.verify (spec 6.2)' do
     it 'sends SmileID-Partner-ID, repeated liveness_images, and binary parts' do
       captured = nil
