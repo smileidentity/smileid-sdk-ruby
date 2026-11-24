@@ -41,6 +41,12 @@ Tests:
 - Every new operation needs a golden fixture test, which checks the exact request body and headers, and tests that parse its responses. Golden fixture tests for each operation live in `spec/usesmileid/request_routing_spec.rb`; follow the existing cases there. `spec/usesmileid/multipart_serialization_spec.rb` tests the multipart builder itself, so change it only when the builder changes. Shared persona cases for integration tests live in the private `smileid-sdk-fixtures` repository.
 - Changed lines must be fully covered by tests. Don't add coverage exclusion comments.
 
+## Spec coverage
+
+`spec-coverage.json` accounts for every public operation in the spec at its `spec_tag`. Each operation names the client method that calls it, such as `client.basic_kyc.verify_sync`, and says where a caller reads each response header the spec declares, or is marked `unsupported` with a reason. The `spec-coverage` job in `test.yml` checks the file against the spec, and `spec/usesmileid/spec_coverage_spec.rb` checks it against the code: every method must exist, and the supported paths must match the operations table in `lib/usesmileid/generated/operations.rb`.
+
+A pull request that adds, removes or stops supporting an operation, or starts or stops exposing a response header, must update `spec-coverage.json` in the same pull request.
+
 ## Running tests
 
 Install dependencies and run the test suite with:
