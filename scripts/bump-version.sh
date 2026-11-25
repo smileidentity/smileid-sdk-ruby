@@ -53,7 +53,8 @@ case "$part" in
   minor) next="${major}.$((minor + 1)).0" ;;
   patch) next="${major}.${minor}.$((patch + 1))" ;;
   [0-9]*)
-    printf '%s\n' "$part" | grep -Eq "$semver" ||
+    # [[ =~ ]] matches the whole argument; grep would pass one with a newline in it.
+    [[ "$part" =~ $semver ]] ||
       fail "invalid version '$part'; use X.Y.Z with plain digits, like 1.2.3"
     IFS=. read -r next_major next_minor next_patch <<EOF
 $part

@@ -77,8 +77,8 @@ RSpec.describe 'scripts/bump-version.sh' do
     end
   end
 
-  %w[1.3 1.3.0.0 01.3.0 1.03.0 1.3.0-rc.1 1.3.x].each do |malformed|
-    it "rejects the malformed version #{malformed}" do
+  ['1.3', '1.3.0.0', '01.3.0', '1.03.0', '1.3.0-rc.1', '1.3.x', "1.3.0\nanything"].each do |malformed|
+    it "rejects the malformed version #{malformed.inspect}" do
       _, stderr, status = bump(malformed)
 
       expect(status.success?).to be(false)
