@@ -329,6 +329,139 @@ module SmileID
       end
     end
 
+    # POST /v3/address
+    class Address < Base
+      UTILITY_TYPES = %w[PrePaid PostPaid].freeze
+
+      # Queues an address verification. The result arrives on callback_url. A
+      # Nigerian address is identified by utility_number with utility_provider
+      # and utility_type; a South African one by id_number. user_id goes in the
+      # body, and is minted for you when omitted.
+      def verify(address:, country:, user_details:, consent:, id_number: nil, utility_number: nil,
+                 utility_provider: nil, utility_type: nil, user_id: nil, callback_url: nil,
+                 partner_params: nil, metadata: nil, timeout: nil)
+        if id_number.to_s.empty? && utility_number.to_s.empty?
+          raise Errors::ValidationError.new('either id_number or utility_number is required')
+        end
+        if utility_type && !UTILITY_TYPES.include?(utility_type.to_s)
+          raise Errors::ValidationError.new("utility_type must be one of #{UTILITY_TYPES.join(', ')}")
+        end
+
+        form = {
+          'address' => address,
+          'country' => country,
+          'id_number' => id_number,
+          'utility_number' => utility_number,
+          'utility_provider' => utility_provider,
+          'utility_type' => utility_type,
+          'user_id' => user_id,
+          'user_details' => coerce_user_details(user_details),
+          'consent' => coerce_consent(consent),
+          'callback_url' => resolve_callback(callback_url),
+          'partner_params' => partner_params,
+          'metadata' => metadata
+        }.compact
+        accepted(@client.call(:address_verification, form: form, timeout: timeout))
+      end
+    end
+
+    # POST /v3/phone
+    class Phone < Base
+      OPERATORS = %w[MTN VODAFONE AIRTELTIGO].freeze
+
+      # Queues a phone number verification. The result arrives on callback_url.
+      # phone_number is the number to check, in E.164 format; the phone number in
+      # user_details is the person's contact number. operator is required for
+      # Ghana and id_number for Kenya. user_id goes in the body.
+      def verify(country:, phone_number:, user_details:, consent:, operator: nil, id_number: nil,
+                 user_id: nil, callback_url: nil, partner_params: nil, metadata: nil, timeout: nil)
+        if country.to_s == 'KE' && id_number.to_s.empty?
+          raise Errors::ValidationError.new('id_number is required for KE')
+        end
+        if operator && !OPERATORS.include?(operator.to_s)
+          raise Errors::ValidationError.new("operator must be one of #{OPERATORS.join(', ')}")
+        end
+
+        form = {
+          'country' => country,
+          'phone_number' => phone_number,
+          'operator' => operator,
+          'id_number' => id_number,
+          'user_id' => user_id,
+          'user_details' => coerce_user_details(user_details),
+          'consent' => coerce_consent(consent),
+          'callback_url' => resolve_callback(callback_url),
+          'partner_params' => partner_params,
+          'metadata' => metadata
+        }.compact
+        accepted(@client.call(:phone_verification, form: form, timeout: timeout))
+      end
+    end
+
+    # /v3/smile_links: hosted verification links you hand to end users.
+    class SmileLinks < Base
+      # id_types is an array of { country:, id_type:, verification_method: }
+      # hashes. expires_at may be a Time or an ISO 8601 string. Returns a
+      # SmileLinkCreated; read the full link with get(ref_id).
+      def create(id_types:, name:, notice_privacy_policy_url:, is_single_use:, company_name: nil,
+                 callback_url: nil, description: nil, expires_at: nil, logo_url: nil,
+                 redirect_url: nil, theme_color: nil, partner_params: nil, user_id: nil, timeout: nil)
+        require_id_types!(id_types)
+        form = {
+          'id_types' => id_types,
+          'name' => name,
+          'company_name' => company_name,
+          'notice_privacy_policy_url' => notice_privacy_policy_url,
+          'is_single_use' => is_single_use,
+          'callback_url' => resolve_callback(callback_url),
+          'description' => description,
+          'expires_at' => expires_at.respond_to?(:getutc) ? expires_at.getutc.iso8601(3) : expires_at,
+          'logo_url' => logo_url,
+          'redirect_url' => redirect_url,
+          'theme_color' => theme_color,
+          'partner_params' => partner_params,
+          'user_id' => user_id
+        }.compact
+        response = @client.call(:create_smile_link, form: form, timeout: timeout)
+        Generated::Models::SmileLinkCreated.from(response.json)
+      end
+
+      # One page of links. limit is 1 to 100 (default 20) and page starts at 1.
+      # single_use: true or false filters; omit it to list both.
+      def list(limit: nil, page: nil, single_use: nil, timeout: nil)
+        query = { 'limit' => limit, 'page' => page, 'single_use' => single_use }.compact
+        response = @client.call(:list_smile_links, query: query, timeout: timeout)
+        Generated::Models::SmileLinkList.from(response.json)
+      end
+
+      def get(ref_id, timeout: nil)
+        response = @client.call(:get_smile_link, path_params: { 'ref_id' => ref_id }, timeout: timeout)
+        Generated::Models::SmileLink.from(response.json)
+      end
+
+      # Replaces the link's id_types, and/or disables (is_disabled: true) or
+      # re-enables (false) it. At least one is required. Returns the updated link.
+      def update(ref_id, id_types: nil, is_disabled: nil, timeout: nil)
+        if id_types.nil? && is_disabled.nil?
+          raise Errors::ValidationError.new('at least one of id_types or is_disabled is required')
+        end
+
+        require_id_types!(id_types) unless id_types.nil?
+        form = { 'id_types' => id_types, 'is_disabled' => is_disabled }.compact
+        response = @client.call(:update_smile_link, path_params: { 'ref_id' => ref_id },
+                                                    form: form, timeout: timeout)
+        Generated::Models::SmileLink.from(response.json)
+      end
+
+      private
+
+      def require_id_types!(id_types)
+        return unless !id_types.is_a?(Array) || id_types.empty?
+
+        raise Errors::ValidationError.new('id_types must be a non-empty array')
+      end
+    end
+
     # POST /v3/aml and /v3/aml/sync
     class Aml < Base
       # Queues a One-Time AML screening. The result arrives on callback_url.

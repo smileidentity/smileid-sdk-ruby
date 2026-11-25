@@ -207,6 +207,47 @@ news = smile.aml_monitoring.news("a1b2c3d4e5", "ref_001", news_category: "financ
 news.news.first.title
 ```
 
+### Address and phone verification
+
+`address.verify` checks an address against the address on record with a data provider. A Nigerian address is identified by `utility_number`, `utility_provider` and `utility_type` (`"PrePaid"` or `"PostPaid"`), a South African one by `id_number`. The result arrives on your callback URL:
+
+```ruby
+accepted = smile.address.verify(
+  address: "12 Marina Rd, Lagos", country: "NG",
+  utility_number: "45012345678", utility_provider: "ikeja_electric", utility_type: "PrePaid",
+  user_details: user_details, consent: consent,
+  callback_url: "https://example.com/callback"  # optional if a default is configured
+)
+accepted.job_id
+```
+
+`phone.verify` checks that a phone number is registered to the person. `phone_number` is the number to check; `operator:` (`"MTN"`, `"VODAFONE"` or `"AIRTELTIGO"`) is required for Ghana and `id_number:` for Kenya:
+
+```ruby
+smile.phone.verify(country: "GH", phone_number: "+233241234567", operator: "MTN",
+                   user_details: user_details, consent: consent)
+```
+
+Both take an optional `user_id:`, sent in the request body.
+
+### Smile Links
+
+`smile_links` manages hosted verification links. `create` returns the link URL and its `ref_id`; `get`, `list` and `update` work on a link by `ref_id`:
+
+```ruby
+created = smile.smile_links.create(
+  id_types: [{ country: "NG", id_type: "NIN", verification_method: "enhanced_kyc" }],
+  name: "Onboarding", notice_privacy_policy_url: "https://example.com/privacy",
+  is_single_use: false
+)
+created.link                                  # the URL to give the end user
+link = smile.smile_links.get(created.ref_id)
+page = smile.smile_links.list(limit: 20, page: 1, single_use: false)
+page.links.first.total_jobs                   # outcome counts are on listed links
+page.meta["total_pages"]
+smile.smile_links.update(created.ref_id, is_disabled: true)  # or id_types: [...]
+```
+
 ### Document verification
 
 ```ruby

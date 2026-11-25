@@ -38,6 +38,12 @@ RSpec.describe SmileID::Helpers::Multipart do
     )
   end
 
+  it 'serializes id_types as a JSON part' do
+    body = build('id_types' => [{ 'country' => 'NG', 'id_type' => 'NIN' }])
+    expect(body).to include("name=\"id_types\"\r\nContent-Type: application/json\r\n\r\n" \
+                            "[{\"country\":\"NG\",\"id_type\":\"NIN\"}]\r\n")
+  end
+
   it 'serializes consent as a JSON part' do
     body = build('consent' => SmileID::Consent.coerce(valid_consent))
     expect(body).to include("name=\"consent\"\r\nContent-Type: application/json\r\n")

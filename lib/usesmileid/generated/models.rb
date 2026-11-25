@@ -277,6 +277,71 @@ module SmileID
         end
       end
 
+      # A Smile Link as read from GET /v3/smile_links/{ref_id} or the listing,
+      # or as returned by an update. Fields mirror the wire. The outcome counts
+      # (clear, block, attention, error, successful_jobs, failed_jobs,
+      # total_jobs) arrive only on listed links and are nil otherwise.
+      class SmileLink
+        FIELDS = %w[
+          ref_id link name company_name description id_types is_single_use callback_url
+          notice_privacy_policy_url logo_url redirect_url theme_color expires_at disabled_at
+          partner_params user_id token_provided_fields token_provided_values created_at
+          updated_at clear block attention error successful_jobs failed_jobs total_jobs
+        ].freeze
+
+        attr_reader(*FIELDS.map(&:to_sym), :raw)
+
+        def initialize(hash)
+          FIELDS.each { |field| instance_variable_set(:"@#{field}", hash[field]) }
+          @raw = hash
+        end
+
+        # True while the link is disabled.
+        def disabled?
+          !disabled_at.nil?
+        end
+
+        def self.from(hash)
+          new(hash)
+        end
+      end
+
+      # Acknowledgment from POST /v3/smile_links (HTTP 201). Read the full link
+      # with smile_links.get(ref_id).
+      class SmileLinkCreated
+        attr_reader :link, :message, :ref_id, :user_id, :raw
+
+        def initialize(link:, message: nil, ref_id: nil, user_id: nil, raw: nil)
+          @link = link
+          @message = message
+          @ref_id = ref_id
+          @user_id = user_id
+          @raw = raw
+        end
+
+        def self.from(hash)
+          new(link: hash['link'], message: hash['message'], ref_id: hash['ref_id'],
+              user_id: hash['user_id'], raw: hash)
+        end
+      end
+
+      # One page of GET /v3/smile_links. `meta` is the pagination hash with
+      # string keys: current_page, limit, total_count and total_pages.
+      class SmileLinkList
+        attr_reader :links, :meta, :raw
+
+        def initialize(links:, meta:, raw: nil)
+          @links = links
+          @meta = meta
+          @raw = raw
+        end
+
+        def self.from(hash)
+          new(links: (hash['links'] || []).map { |item| SmileLink.from(item) },
+              meta: hash['meta'] || {}, raw: hash)
+        end
+      end
+
       # Service responses (spec section 5.2). Nested collections are exposed as
       # plain hashes with string keys, exactly as they arrive on the wire.
       class BankCodesResponse

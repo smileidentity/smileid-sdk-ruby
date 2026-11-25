@@ -174,7 +174,10 @@ RSpec.describe 'token lifecycle' do
 
     expect(SmileID::Client::PRODUCT_BY_PATH).to include(expected)
     unbound = SmileID::Generated::Operations::OPS.values.reject(&:product)
-    expect(unbound.map(&:path)).to include('/v3/status/{job_id}', '/v3/services/id_status')
+    expect(unbound.map(&:path)).to include('/v3/status/{job_id}', '/v3/services/id_status',
+                                           '/v3/smile_links', '/v3/smile_links/{ref_id}')
+    expect(SmileID::Client::PRODUCT_BY_PATH).to include('/v3/address' => 'address_verification',
+                                                        '/v3/phone' => 'phone_number_verification')
   end
 
   describe 'AML products' do

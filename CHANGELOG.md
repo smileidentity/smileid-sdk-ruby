@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Address verification: `address.verify` (`POST /v3/address`), async with the result on the callback URL. Its token is minted with the `address_verification` product claim.
+- Phone verification: `phone.verify` (`POST /v3/phone`), async with the result on the callback URL. Its token is minted with the `phone_number_verification` product claim.
+- Smile Links: `smile_links.create`, `smile_links.get`, `smile_links.list` and `smile_links.update`. They return `SmileLinkCreated`, `SmileLink` and `SmileLinkList`. These calls need no product claim.
+- `id_types` is sent as a JSON multipart part.
+
 ## [13.2.0] - 2026-11-24
 
 ### Added
